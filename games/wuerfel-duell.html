@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Würfel-Duell 🎲</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body { background: #0f0f1a; }
+    .duell-area { display: flex; gap: 60px; align-items: center; margin: 30px 0; flex-wrap: wrap; justify-content: center; }
+    .player-side { text-align: center; }
+    .player-side h2 { font-size: 1.3rem; margin-bottom: 14px; color: #aaa; }
+    .dice { width: 100px; height: 100px; background: #fff; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4rem; margin: 0 auto 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      transition: transform 0.1s; }
+    .dice.rolling { animation: roll 0.5s ease; }
+    @keyframes roll { 0%,100%{transform:rotate(0deg)} 25%{transform:rotate(-15deg)} 75%{transform:rotate(15deg)} }
+    .dice-val { font-size: 2rem; font-weight: bold; color: #e94560; }
+    #rollBtn { padding: 14px 40px; background: #e94560; color: #fff; border: none;
+      border-radius: 25px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+      transition: background 0.2s, transform 0.1s; margin: 10px; }
+    #rollBtn:hover { background: #c73652; transform: scale(1.05); }
+    #result { font-size: 1.5rem; font-weight: bold; margin: 16px 0; min-height: 40px; }
+    .score-board { display: flex; gap: 40px; font-size: 1.2rem; margin-bottom: 20px; }
+    .score-board span { color: #e94560; font-weight: bold; }
+    .vs { font-size: 2rem; color: #555; }
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🎲 Würfel-Duell</h1>
+  <div class="score-board">
+    <div>Du: <span id="pScore">0</span></div>
+    <div>Computer: <span id="cScore">0</span></div>
+    <div>Unentschieden: <span id="draws">0</span></div>
+  </div>
+  <div class="duell-area">
+    <div class="player-side">
+      <h2>Du</h2>
+      <div class="dice" id="pDice">🎲</div>
+      <div class="dice-val" id="pVal">-</div>
+    </div>
+    <div class="vs">VS</div>
+    <div class="player-side">
+      <h2>Computer</h2>
+      <div class="dice" id="cDice">🎲</div>
+      <div class="dice-val" id="cVal">-</div>
+    </div>
+  </div>
+  <div id="result"></div>
+  <button id="rollBtn" onclick="roll()">🎲 Würfeln!</button>
+
+  <script>
+    const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+    let pScore=0, cScore=0, draws=0, rolling=false;
+
+    function roll() {
+      if (rolling) return;
+      rolling = true;
+      document.getElementById('result').textContent = '';
+      const pDice = document.getElementById('pDice');
+      const cDice = document.getElementById('cDice');
+      pDice.classList.add('rolling'); cDice.classList.add('rolling');
+
+      let count = 0;
+      const interval = setInterval(() => {
+        pDice.textContent = faces[Math.floor(Math.random()*6)];
+        cDice.textContent = faces[Math.floor(Math.random()*6)];
+        count++;
+        if (count >= 10) {
+          clearInterval(interval);
+          pDice.classList.remove('rolling'); cDice.classList.remove('rolling');
+          const pVal = Math.floor(Math.random()*6)+1;
+          const cVal = Math.floor(Math.random()*6)+1;
+          pDice.textContent = faces[pVal-1];
+          cDice.textContent = faces[cVal-1];
+          document.getElementById('pVal').textContent = pVal;
+          document.getElementById('cVal').textContent = cVal;
+          const res = document.getElementById('result');
+          if (pVal > cVal) { pScore++; res.textContent = '🏆 Du gewinnst!'; res.style.color='#00ff88'; }
+          else if (cVal > pVal) { cScore++; res.textContent = '💻 Computer gewinnt!'; res.style.color='#e94560'; }
+          else { draws++; res.textContent = '🤝 Unentschieden!'; res.style.color='#ffd700'; }
+          document.getElementById('pScore').textContent = pScore;
+          document.getElementById('cScore').textContent = cScore;
+          document.getElementById('draws').textContent = draws;
+          rolling = false;
+        }
+      }, 60);
+    }
+  </script>
+</body>
+</html>

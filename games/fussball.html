@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fußball ⚽</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body { background: #0f0f1a; }
+    #gameCanvas { background: #2d7a2d; }
+    .scoreboard {
+      display: flex;
+      gap: 40px;
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    .scoreboard span { color: #e94560; font-weight: bold; }
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>⚽ Fußball</h1>
+  <div class="scoreboard">
+    <div>Du: <span id="playerScore">0</span></div>
+    <div>Computer: <span id="cpuScore">0</span></div>
+  </div>
+  <canvas id="gameCanvas" width="700" height="450"></canvas>
+  <p class="instructions">🖱️ Maus bewegen zum Steuern | Klicken zum Schießen</p>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const playerScoreEl = document.getElementById('playerScore');
+    const cpuScoreEl = document.getElementById('cpuScore');
+
+    const W = canvas.width, H = canvas.height;
+    const GOAL_W = 12, GOAL_H = 120;
+    const GOAL_Y = H / 2 - GOAL_H / 2;
+
+    let playerScore = 0, cpuScore = 0;
+    let ball = { x: W / 2, y: H / 2, r: 14, vx: 3, vy: 2 };
+    let player = { x: 30, y: H / 2, w: 14, h: 80 };
+    let cpu = { x: W - 44, y: H / 2, w: 14, h: 80 };
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const my = e.clientY - rect.top;
+      player.y = Math.max(player.h / 2, Math.min(H - player.h / 2, my));
+    });
+
+    canvas.addEventListener('click', () => {
+      const dx = ball.x - (player.x + player.w / 2);
+      const dy = ball.y - player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 80) {
+        ball.vx += 5;
+        ball.vy += (dy / dist) * 3;
+      }
+    });
+
+    function resetBall(dir) {
+      ball.x = W / 2;
+      ball.y = H / 2;
+      ball.vx = dir * 4;
+      ball.vy = (Math.random() - 0.5) * 4;
+    }
+
+    function drawField() {
+      ctx.fillStyle = '#2d7a2d';
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 8]);
+      ctx.beginPath();
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W / 2, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, 60, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fillRect(0, GOAL_Y, GOAL_W, GOAL_H);
+      ctx.fillRect(W - GOAL_W, GOAL_Y, GOAL_W, GOAL_H);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(0, GOAL_Y, GOAL_W, GOAL_H);
+      ctx.strokeRect(W - GOAL_W, GOAL_Y, GOAL_W, GOAL_H);
+    }
+
+    function drawPaddle(p, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(p.x - p.w / 2, p.y - p.h / 2, p.w, p.h, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function drawBall() {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function update() {
+      const cpuCenter = cpu.y;
+      const cpuSpeed = 3.5;
+      if (cpuCenter < ball.y - 5) cpu.y += cpuSpeed;
+      else if (cpuCenter > ball.y + 5) cpu.y -= cpuSpeed;
+      cpu.y = Math.max(cpu.h / 2, Math.min(H - cpu.h / 2, cpu.y));
+
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      if (ball.y - ball.r < 0) { ball.y = ball.r; ball.vy *= -1; }
+      if (ball.y + ball.r > H) { ball.y = H - ball.r; ball.vy *= -1; }
+
+      if (
+        ball.x - ball.r < player.x + player.w / 2 &&
+        ball.x + ball.r > player.x - player.w / 2 &&
+        ball.y > player.y - player.h / 2 &&
+        ball.y < player.y + player.h / 2
+      ) {
+        ball.vx = Math.abs(ball.vx) * 1.05;
+        ball.vy += (ball.y - player.y) * 0.1;
+        ball.x = player.x + player.w / 2 + ball.r;
+      }
+
+      if (
+        ball.x + ball.r > cpu.x - cpu.w / 2 &&
+        ball.x - ball.r < cpu.x + cpu.w / 2 &&
+        ball.y > cpu.y - cpu.h / 2 &&
+        ball.y < cpu.y + cpu.h / 2
+      ) {
+        ball.vx = -Math.abs(ball.vx) * 1.05;
+        ball.vy += (ball.y - cpu.y) * 0.1;
+        ball.x = cpu.x - cpu.w / 2 - ball.r;
+      }
+
+      const maxSpeed = 14;
+      const spd = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+      if (spd > maxSpeed) {
+        ball.vx = (ball.vx / spd) * maxSpeed;
+        ball.vy = (ball.vy / spd) * maxSpeed;
+      }
+
+      if (ball.x - ball.r < GOAL_W && ball.y > GOAL_Y && ball.y < GOAL_Y + GOAL_H) {
+        cpuScore++;
+        cpuScoreEl.textContent = cpuScore;
+        resetBall(1);
+      }
+      if (ball.x + ball.r > W - GOAL_W && ball.y > GOAL_Y && ball.y < GOAL_Y + GOAL_H) {
+        playerScore++;
+        playerScoreEl.textContent = playerScore;
+        resetBall(-1);
+      }
+
+      if (ball.x - ball.r < 0) { ball.x = ball.r; ball.vx *= -1; }
+      if (ball.x + ball.r > W) { ball.x = W - ball.r; ball.vx *= -1; }
+    }
+
+    function loop() {
+      update();
+      drawField();
+      drawPaddle(player, '#e94560');
+      drawPaddle(cpu, '#00d4ff');
+      drawBall();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>

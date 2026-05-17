@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tetris 🧩</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>
+    body{background:#0f0f1a;}
+    .tetris-wrap{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap;justify-content:center;}
+    #gameCanvas{background:#0a0a18;}
+    .side-panel{color:#fff;min-width:120px;}
+    .side-panel h3{color:#e94560;margin-bottom:8px;}
+    #nextCanvas{background:#0a0a18;border:1px solid #2a2a4a;border-radius:6px;display:block;margin-bottom:16px;}
+    .stat{margin-bottom:12px;font-size:1rem;color:#aaa;}
+    .stat span{color:#fff;font-weight:bold;font-size:1.1rem;}
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🧩 Tetris</h1>
+  <div class="tetris-wrap">
+    <canvas id="gameCanvas" width="240" height="480"></canvas>
+    <div class="side-panel">
+      <h3>Nächstes</h3>
+      <canvas id="nextCanvas" width="100" height="100"></canvas>
+      <div class="stat">Score<br><span id="score">0</span></div>
+      <div class="stat">Level<br><span id="level">1</span></div>
+      <div class="stat">Linien<br><span id="lines">0</span></div>
+      <div id="gameOverMsg" class="game-over-msg" style="display:none;font-size:1rem;margin-top:10px;">Game Over!<br><button onclick="initGame()" style="margin-top:8px;padding:8px 16px;background:#e94560;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:bold;">Neustart</button></div>
+    </div>
+  </div>
+  <p class="instructions">⬅️➡️ Bewegen | ⬆️ Drehen | ⬇️ Schneller | Space: Fallen lassen</p>
+
+  <script src="../leaderboard.js"></script>
+  <script>
+    const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+    const nextCanvas=document.getElementById('nextCanvas'), nCtx=nextCanvas.getContext('2d');
+    const COLS=12, ROWS=24, SZ=20;
+    const COLORS=['','#e94560','#00d4ff','#ffd700','#a855f7','#00ff88','#ff8c00','#ff69b4'];
+    const SHAPES=[
+      null,
+      [[1,1,1,1]],
+      [[1,1],[1,1]],
+      [[0,1,0],[1,1,1]],
+      [[1,0,0],[1,1,1]],
+      [[0,0,1],[1,1,1]],
+      [[0,1,1],[1,1,0]],
+      [[1,1,0],[0,1,1]]
+    ];
+    let board,piece,next,score,level,lines,gameOver,dropInterval,lastDrop,animId;
+
+    function initGame(){
+      board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+      score=0;level=1;lines=0;gameOver=false;dropInterval=600;lastDrop=0;
+      document.getElementById('score').textContent=0;
+      document.getElementById('level').textContent=1;
+      document.getElementById('lines').textContent=0;
+      document.getElementById('gameOverMsg').style.display='none';
+      next=newPiece(); piece=newPiece();
+      if(animId) cancelAnimationFrame(animId);
+      animId=requestAnimationFrame(ts=>loop(ts));
+    }
+
+    function newPiece(){
+      const t=Math.floor(Math.random()*7)+1;
+      const shape=SHAPES[t].map(r=>[...r]);
+      return {shape,color:t,x:Math.floor(COLS/2)-Math.floor(shape[0].length/2),y:0};
+    }
+
+    function rotate(shape){ return shape[0].map((_,i)=>shape.map(r=>r[i]).reverse()); }
+
+    function valid(p,dx=0,dy=0,sh=null){
+      const s=sh||p.shape;
+      return s.every((row,r)=>row.every((v,c)=>{
+        if(!v) return true;
+        const nx=p.x+c+dx, ny=p.y+r+dy;
+        return nx>=0&&nx<COLS&&ny<ROWS&&(ny<0||!board[ny][nx]);
+      }));
+    }
+
+    function place(){
+      piece.shape.forEach((row,r)=>row.forEach((v,c)=>{ if(v&&piece.y+r>=0) board[piece.y+r][piece.x+c]=piece.color; }));
+      // Clear lines
+      let cleared=0;
+      for(let r=ROWS-1;r>=0;r--){
+        if(board[r].every(v=>v)){
+          board.splice(r,1); board.unshift(Array(COLS).fill(0)); cleared++; r++;
+        }
+      }
+      if(cleared){
+        lines+=cleared; score+=[0,100,300,500,800][cleared]*level;
+        if(lines>=level*10){ level++; dropInterval=Math.max(100,600-level*50); }
+        document.getElementById('score').textContent=score;
+        document.getElementById('level').textContent=level;
+        document.getElementById('lines').textContent=lines;
+      }
+      piece=next; next=newPiece();
+      if(!valid(piece)) { gameOver=true; document.getElementById('gameOverMsg').style.display='block';
+        if(typeof Leaderboard!=='undefined') Leaderboard.save('tetris',score); }
+    }
+
+    const keys={};
+    document.addEventListener('keydown',e=>{
+      if(gameOver) return;
+      if(e.code==='ArrowLeft'&&valid(piece,-1,0)) piece.x--;
+      if(e.code==='ArrowRight'&&valid(piece,1,0)) piece.x++;
+      if(e.code==='ArrowDown'&&valid(piece,0,1)){piece.y++;score++;document.getElementById('score').textContent=score;}
+      if(e.code==='ArrowUp'){const r=rotate(piece.shape);if(valid(piece,0,0,r))piece.shape=r;}
+      if(e.code==='Space'){e.preventDefault();while(valid(piece,0,1)){piece.y++;score++;}place();}
+      if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp','Space'].includes(e.code)) e.preventDefault();
+    });
+
+    function draw(){
+      ctx.fillStyle='#0a0a18'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      // Grid
+      ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+        ctx.strokeRect(c*SZ,r*SZ,SZ,SZ);
+        if(board[r][c]){ ctx.fillStyle=COLORS[board[r][c]]; ctx.fillRect(c*SZ+1,r*SZ+1,SZ-2,SZ-2); }
+      }
+      // Ghost
+      let ghost={...piece,shape:piece.shape.map(r=>[...r])};
+      while(valid(ghost,0,1)) ghost.y++;
+      ghost.shape.forEach((row,r)=>row.forEach((v,c)=>{
+        if(v){ ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.fillRect((ghost.x+c)*SZ+1,(ghost.y+r)*SZ+1,SZ-2,SZ-2); }
+      }));
+      // Piece
+      piece.shape.forEach((row,r)=>row.forEach((v,c)=>{
+        if(v&&piece.y+r>=0){ ctx.fillStyle=COLORS[piece.color]; ctx.fillRect((piece.x+c)*SZ+1,(piece.y+r)*SZ+1,SZ-2,SZ-2); }
+      }));
+      // Next
+      nCtx.fillStyle='#0a0a18'; nCtx.fillRect(0,0,100,100);
+      const ns=next.shape, ox=(100-ns[0].length*20)/2, oy=(100-ns.length*20)/2;
+      ns.forEach((row,r)=>row.forEach((v,c)=>{ if(v){ nCtx.fillStyle=COLORS[next.color]; nCtx.fillRect(ox+c*20+1,oy+r*20+1,18,18); } }));
+    }
+
+    function loop(ts){
+      if(!gameOver){
+        if(ts-lastDrop>dropInterval){ if(valid(piece,0,1)) piece.y++; else place(); lastDrop=ts; }
+        draw();
+        animId=requestAnimationFrame(ts=>loop(ts));
+      }
+    }
+    initGame();
+  </script>
+</body>
+</html>

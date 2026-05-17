@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Maze 🌀</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>body{background:#0f0f1a;} #gameCanvas{background:#0a0a18;}</style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🌀 Maze</h1>
+  <div class="score-display">Level: <span id="level">1</span> &nbsp;|&nbsp; Zeit: <span id="timer">0</span>s</div>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="msg" class="game-over-msg" style="display:none;"></div>
+  <p class="instructions">⬅️➡️⬆️⬇️ Pfeiltasten oder WASD</p>
+
+  <script>
+    const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height;
+    let COLS=15, ROWS=15, SZ, maze, player, level=1, seconds=0, timerInt, animId;
+
+    function initMaze(){
+      SZ=Math.floor(W/COLS);
+      maze=Array.from({length:ROWS},()=>Array.from({length:COLS},()=>({n:true,s:true,e:true,w:true,visited:false})));
+      // Generate maze with DFS
+      const stack=[[0,0]]; maze[0][0].visited=true;
+      while(stack.length){
+        const [r,c]=stack[stack.length-1];
+        const neighbors=[];
+        if(r>0&&!maze[r-1][c].visited) neighbors.push([r-1,c,'n','s']);
+        if(r<ROWS-1&&!maze[r+1][c].visited) neighbors.push([r+1,c,'s','n']);
+        if(c>0&&!maze[r][c-1].visited) neighbors.push([r,c-1,'w','e']);
+        if(c<COLS-1&&!maze[r][c+1].visited) neighbors.push([r,c+1,'e','w']);
+        if(neighbors.length){
+          const [nr,nc,d1,d2]=neighbors[Math.floor(Math.random()*neighbors.length)];
+          maze[r][c][d1]=false; maze[nr][nc][d2]=false;
+          maze[nr][nc].visited=true; stack.push([nr,nc]);
+        } else stack.pop();
+      }
+      player={r:0,c:0};
+      document.getElementById('level').textContent=level;
+      clearInterval(timerInt); seconds=0; document.getElementById('timer').textContent=0;
+      timerInt=setInterval(()=>{seconds++;document.getElementById('timer').textContent=seconds;},1000);
+      document.getElementById('msg').style.display='none';
+      draw();
+    }
+
+    function draw(){
+      ctx.fillStyle='#0a0a18'; ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle='#e94560'; ctx.lineWidth=2;
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+        const x=c*SZ, y=r*SZ, m=maze[r][c];
+        if(m.n){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+SZ,y);ctx.stroke();}
+        if(m.s){ctx.beginPath();ctx.moveTo(x,y+SZ);ctx.lineTo(x+SZ,y+SZ);ctx.stroke();}
+        if(m.w){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+SZ);ctx.stroke();}
+        if(m.e){ctx.beginPath();ctx.moveTo(x+SZ,y);ctx.lineTo(x+SZ,y+SZ);ctx.stroke();}
+      }
+      // Exit
+      ctx.fillStyle='#ffd700';
+      ctx.fillRect((COLS-1)*SZ+4,(ROWS-1)*SZ+4,SZ-8,SZ-8);
+      ctx.fillStyle='#000'; ctx.font='bold '+(SZ-8)+'px serif'; ctx.textAlign='center';
+      ctx.fillText('🏁',(COLS-1)*SZ+SZ/2,(ROWS-1)*SZ+SZ-4);
+      // Player
+      ctx.fillStyle='#00d4ff';
+      ctx.shadowColor='#00d4ff'; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.arc(player.c*SZ+SZ/2,player.r*SZ+SZ/2,SZ/2-4,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    function move(dr,dc){
+      const {r,c}=player, m=maze[r][c];
+      if(dr===-1&&!m.n) player.r--;
+      else if(dr===1&&!m.s) player.r++;
+      else if(dc===-1&&!m.w) player.c--;
+      else if(dc===1&&!m.e) player.c++;
+      draw();
+      if(player.r===ROWS-1&&player.c===COLS-1){
+        clearInterval(timerInt);
+        document.getElementById('msg').textContent=`🏆 Level ${level} geschafft in ${seconds}s!`;
+        document.getElementById('msg').style.display='block';
+        level++; COLS=Math.min(25,COLS+2); ROWS=Math.min(25,ROWS+2);
+        setTimeout(initMaze,1500);
+      }
+    }
+
+    document.addEventListener('keydown',e=>{
+      const map={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1],
+                 KeyW:[-1,0],KeyS:[1,0],KeyA:[0,-1],KeyD:[0,1]};
+      if(map[e.code]){e.preventDefault();move(...map[e.code]);}
+    });
+
+    initMaze();
+  </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reaction Test 🧠</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>
+    body{background:#0f0f1a;}
+    #box{width:500px;height:300px;border-radius:20px;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;cursor:pointer;font-size:1.5rem;font-weight:bold;color:#fff;
+      transition:background 0.2s;user-select:none;border:3px solid #2a2a4a;}
+    #box.waiting{background:#1a1a2e;}
+    #box.ready{background:#e94560;}
+    #box.go{background:#00ff88;color:#000;}
+    #box.early{background:#ff8c00;}
+    .results{margin-top:20px;width:500px;}
+    .result-item{display:flex;justify-content:space-between;padding:8px 14px;background:#1a1a2e;border-radius:8px;margin-bottom:6px;color:#fff;font-size:1rem;}
+    .result-item span{color:#e94560;font-weight:bold;}
+    .stats{display:flex;gap:30px;font-size:1.1rem;margin:14px 0;color:#fff;flex-wrap:wrap;justify-content:center;}
+    .stats span{color:#e94560;font-weight:bold;}
+    #startBtn{padding:12px 36px;background:#e94560;color:#fff;border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;margin-top:10px;}
+    #startBtn:hover{background:#c73652;}
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🧠 Reaction Test</h1>
+  <div class="stats">
+    <div>Bester: <span id="best">-</span> ms</div>
+    <div>Durchschnitt: <span id="avg">-</span> ms</div>
+    <div>Versuche: <span id="tries">0</span>/5</div>
+  </div>
+  <div id="box" class="waiting" onclick="handleClick()">
+    <div id="boxText">Klicke zum Starten</div>
+  </div>
+  <div class="results" id="results"></div>
+
+  <script>
+    let state='idle', startTime, timeout, times=[], tries=0;
+
+    function handleClick(){
+      if(state==='idle'){ startRound(); return; }
+      if(state==='waiting'){ tooEarly(); return; }
+      if(state==='go'){ react(); return; }
+      if(state==='done'){ reset(); return; }
+    }
+
+    function startRound(){
+      if(tries>=5){ reset(); return; }
+      state='waiting';
+      const box=document.getElementById('box');
+      box.className='box waiting'; box.style.background='#1a1a2e';
+      document.getElementById('boxText').textContent='Warte auf Grün...';
+      const delay=1500+Math.random()*3000;
+      timeout=setTimeout(()=>{
+        state='go'; box.style.background='#00ff88';
+        document.getElementById('boxText').textContent='JETZT KLICKEN!';
+        document.getElementById('boxText').style.color='#000';
+        startTime=performance.now();
+      },delay);
+    }
+
+    function tooEarly(){
+      clearTimeout(timeout); state='idle';
+      const box=document.getElementById('box');
+      box.style.background='#ff8c00';
+      document.getElementById('boxText').textContent='Zu früh! Klicke zum Weitermachen';
+      document.getElementById('boxText').style.color='#fff';
+    }
+
+    function react(){
+      const t=Math.round(performance.now()-startTime);
+      times.push(t); tries++;
+      document.getElementById('tries').textContent=tries+'/5';
+      const best=Math.min(...times);
+      const avg=Math.round(times.reduce((a,b)=>a+b,0)/times.length);
+      document.getElementById('best').textContent=best;
+      document.getElementById('avg').textContent=avg;
+      const box=document.getElementById('box');
+      box.style.background='#1a1a2e';
+      document.getElementById('boxText').style.color='#fff';
+      // Add result
+      const res=document.getElementById('results');
+      const item=document.createElement('div'); item.className='result-item';
+      const rating=t<200?'⚡ Blitz!':t<300?'🏆 Super!':t<400?'👍 Gut':t<500?'😐 OK':'🐢 Langsam';
+      item.innerHTML=`<span>Versuch ${tries}</span><span>${t} ms</span><span>${rating}</span>`;
+      res.prepend(item);
+      if(tries>=5){
+        state='done';
+        document.getElementById('boxText').textContent=`Fertig! Ø ${avg}ms | Klicke zum Neustart`;
+      } else {
+        state='idle';
+        document.getElementById('boxText').textContent='Klicke für nächsten Versuch';
+      }
+    }
+
+    function reset(){ tries=0; times=[]; state='idle'; document.getElementById('results').innerHTML=''; document.getElementById('tries').textContent='0/5'; document.getElementById('best').textContent='-'; document.getElementById('avg').textContent='-'; document.getElementById('box').style.background='#1a1a2e'; document.getElementById('boxText').textContent='Klicke zum Starten'; document.getElementById('boxText').style.color='#fff'; }
+  </script>
+</body>
+</html>

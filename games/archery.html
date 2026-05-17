@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Archery 🏹</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>body{background:#0f0f1a;} #gameCanvas{background:#1a3a1a;cursor:crosshair;}</style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🏹 Archery</h1>
+  <div class="score-display">Score: <span id="score">0</span> &nbsp;|&nbsp; Pfeile: <span id="arrows">10</span> &nbsp;|&nbsp; Highscore: <span id="hs">0</span></div>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="msg" class="game-over-msg" style="display:none;"></div>
+  <p class="instructions">Klicken zum Schießen | Zielscheibe bewegt sich!</p>
+
+  <script>
+    const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height;
+    let target, arrows, score, hs=0, arrowsLeft, animId, frame, hits, wind;
+
+    function initGame(){
+      target={x:250,y:200,r:80,vx:1.5,vy:1,wobble:0};
+      arrows=[]; score=0; arrowsLeft=10; frame=0; hits=[];
+      wind=(Math.random()-0.5)*3;
+      document.getElementById('score').textContent=0;
+      document.getElementById('arrows').textContent=10;
+      document.getElementById('msg').style.display='none';
+      if(animId) cancelAnimationFrame(animId);
+      loop();
+    }
+
+    canvas.addEventListener('click',e=>{
+      if(arrowsLeft<=0) return;
+      const rect=canvas.getBoundingClientRect();
+      const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+      arrowsLeft--; document.getElementById('arrows').textContent=arrowsLeft;
+      // Calculate score
+      const dist=Math.hypot(mx-target.x,my-target.y);
+      let pts=0;
+      if(dist<target.r*0.1) pts=10;
+      else if(dist<target.r*0.25) pts=9;
+      else if(dist<target.r*0.4) pts=8;
+      else if(dist<target.r*0.55) pts=7;
+      else if(dist<target.r*0.7) pts=6;
+      else if(dist<target.r*0.85) pts=5;
+      else if(dist<target.r) pts=3;
+      score+=pts; document.getElementById('score').textContent=score;
+      hits.push({x:mx,y:my,pts,life:120});
+      if(arrowsLeft<=0) setTimeout(endGame,1500);
+    });
+
+    function endGame(){
+      if(score>hs){hs=score;document.getElementById('hs').textContent=hs;}
+      document.getElementById('msg').textContent=`Fertig! Score: ${score}/100 | Klicken zum Neustart`;
+      document.getElementById('msg').style.display='block';
+      canvas.addEventListener('click',initGame,{once:true});
+    }
+
+    function loop(){
+      frame++;
+      // Background
+      ctx.fillStyle='#1a3a1a'; ctx.fillRect(0,0,W,H);
+      // Grass texture
+      ctx.fillStyle='#1e4a1e';
+      for(let i=0;i<20;i++) ctx.fillRect((i*73)%W,(i*47)%H,3,8);
+      // Wind indicator
+      ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='14px Segoe UI'; ctx.textAlign='left';
+      ctx.fillText(`💨 Wind: ${wind>0?'+':''}${wind.toFixed(1)}`,10,25);
+
+      // Move target
+      target.x+=target.vx; target.y+=target.vy;
+      target.wobble+=0.05;
+      if(target.x-target.r<0||target.x+target.r>W) target.vx*=-1;
+      if(target.y-target.r<0||target.y+target.r>H) target.vy*=-1;
+
+      // Draw target
+      const rings=[{r:1,'#':'#fff'},{r:0.85,c:'#000'},{r:0.7,c:'#00d4ff'},{r:0.55,c:'#00d4ff'},{r:0.4,c:'#e94560'},{r:0.25,c:'#e94560'},{r:0.1,c:'#ffd700'}];
+      const colors=['#fff','#000','#00d4ff','#00d4ff','#e94560','#e94560','#ffd700'];
+      colors.forEach((c,i)=>{
+        ctx.fillStyle=c;
+        ctx.beginPath(); ctx.arc(target.x,target.y,target.r*(1-i*0.14),0,Math.PI*2); ctx.fill();
+      });
+      // Cross hairs
+      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(target.x-target.r,target.y); ctx.lineTo(target.x+target.r,target.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(target.x,target.y-target.r); ctx.lineTo(target.x,target.y+target.r); ctx.stroke();
+
+      // Draw hits
+      hits.forEach(h=>{
+        h.life--;
+        ctx.fillStyle='#333';
+        ctx.beginPath(); ctx.arc(h.x,h.y,4,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(255,215,0,'+(h.life/120)+')';
+        ctx.font='bold 16px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText(h.pts>0?'+'+h.pts:'miss',h.x,h.y-15);
+      });
+      hits=hits.filter(h=>h.life>0);
+
+      if(arrowsLeft>0) animId=requestAnimationFrame(loop);
+      else animId=requestAnimationFrame(loop);
+    }
+
+    initGame();
+  </script>
+</body>
+</html>

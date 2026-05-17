@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏆 Bestenliste – GameZone</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { background: #0f0f1a; }
+
+    .lb-header {
+      text-align: center;
+      padding: 40px 20px 20px;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-bottom: 2px solid #e94560;
+    }
+    .lb-header h1 { font-size: 2.5rem; color: #e94560; margin-bottom: 6px; }
+    .lb-header p  { color: #aaa; }
+
+    .lb-nav {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      flex-wrap: wrap;
+    }
+    .lb-nav a {
+      padding: 8px 18px;
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 20px;
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .lb-nav a:hover { border-color: #e94560; color: #e94560; }
+
+    .lb-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 10px 30px 50px;
+    }
+
+    .game-filter {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+      justify-content: center;
+    }
+    .filter-btn {
+      padding: 8px 18px;
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 20px;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: #e94560;
+      border-color: #e94560;
+      color: #fff;
+    }
+
+    .lb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .lb-card {
+      background: linear-gradient(145deg, #1a1a2e, #16213e);
+      border: 1px solid #2a2a4a;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .lb-card:hover { border-color: #e94560; transform: translateY(-4px); }
+
+    .lb-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: rgba(233,69,96,0.1);
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .lb-card-icon { font-size: 1.8rem; }
+    .lb-card-title { font-size: 1.1rem; font-weight: bold; color: #fff; }
+
+    .lb-table { width: 100%; border-collapse: collapse; }
+    .lb-table tr { border-bottom: 1px solid #1a1a2e; }
+    .lb-table tr:last-child { border-bottom: none; }
+    .lb-table td { padding: 10px 18px; font-size: 0.92rem; color: #ccc; }
+    .lb-table .rank { width: 36px; font-weight: bold; }
+    .lb-table .rank.gold   { color: #ffd700; }
+    .lb-table .rank.silver { color: #c0c0c0; }
+    .lb-table .rank.bronze { color: #cd7f32; }
+    .lb-table .player-name { color: #fff; font-weight: 500; }
+    .lb-table .player-score { color: #e94560; font-weight: bold; text-align: right; }
+    .lb-table .player-date  { color: #555; font-size: 0.8rem; text-align: right; }
+
+    .lb-empty {
+      padding: 20px 18px;
+      color: #555;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .overall-section {
+      margin-bottom: 40px;
+    }
+    .overall-section h2 {
+      color: #e94560;
+      font-size: 1.4rem;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .overall-table {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      border-collapse: collapse;
+      background: #1a1a2e;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #2a2a4a;
+    }
+    .overall-table th {
+      padding: 12px 18px;
+      background: rgba(233,69,96,0.15);
+      color: #e94560;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+    .overall-table td { padding: 11px 18px; color: #ccc; border-top: 1px solid #2a2a4a; }
+    .overall-table .ov-rank { font-weight: bold; width: 40px; }
+    .overall-table .ov-name { color: #fff; font-weight: 500; }
+    .overall-table .ov-score { color: #ffd700; font-weight: bold; text-align: right; }
+    .overall-table .ov-games { color: #aaa; text-align: right; font-size: 0.85rem; }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid #2a2a4a;
+      margin: 30px 0;
+    }
+
+    #noData {
+      text-align: center;
+      color: #555;
+      padding: 60px 20px;
+      font-size: 1.1rem;
+    }
+
+    .clear-btn {
+      display: block;
+      margin: 30px auto 0;
+      padding: 10px 24px;
+      background: transparent;
+      border: 1px solid #555;
+      border-radius: 20px;
+      color: #555;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .clear-btn:hover { border-color: #e94560; color: #e94560; }
+  </style>
+</head>
+<body>
+  <div class="lb-header">
+    <h1>🏆 Bestenliste</h1>
+    <p>Die besten Spieler auf diesem Gerät</p>
+  </div>
+
+  <div class="lb-nav">
+    <a href="index.html">← Zurück zur Startseite</a>
+  </div>
+
+  <div class="lb-container">
+
+    <!-- Gesamtranking -->
+    <div class="overall-section">
+      <h2>🥇 Gesamtranking</h2>
+      <table class="overall-table" id="overallTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Spieler</th>
+            <th style="text-align:right">Gesamtpunkte</th>
+            <th style="text-align:right">Spiele</th>
+          </tr>
+        </thead>
+        <tbody id="overallBody"></tbody>
+      </table>
+    </div>
+
+    <hr class="section-divider" />
+
+    <!-- Filter -->
+    <div class="game-filter" id="filterRow"></div>
+
+    <!-- Spiel-Karten -->
+    <div id="noData" style="display:none;">
+      Noch keine Scores vorhanden. Spiele ein paar Spiele! 🎮
+    </div>
+    <div class="lb-grid" id="lbGrid"></div>
+
+    <button class="clear-btn" onclick="clearAll()">🗑️ Alle Scores löschen</button>
+  </div>
+
+  <script src="leaderboard.js"></script>
+  <script>
+    const GAME_META = {
+      'geometry-dash':  { icon: '🟥', name: 'Geometry Dash' },
+      'snake':          { icon: '🐍', name: 'Snake' },
+      'flappy-bird':    { icon: '🐦', name: 'Flappy Bird' },
+      'car-racer':      { icon: '🏎️', name: 'Car Racer' },
+      'breakout':       { icon: '🧱', name: 'Breakout' },
+      'space-invaders': { icon: '🚀', name: 'Space Invaders' },
+      'asteroids':      { icon: '🌟', name: 'Asteroids' },
+      'tetris':         { icon: '🧩', name: 'Tetris' },
+      '2048':           { icon: '🔢', name: '2048' },
+      'aim-trainer':    { icon: '🎯', name: 'Aim Trainer' },
+      'whack-a-mole':   { icon: '🎪', name: 'Whack-a-Mole' },
+      'basketball':     { icon: '🏀', name: 'Basketball' },
+      'archery':        { icon: '🏹', name: 'Archery' },
+      'frogger':        { icon: '🐸', name: 'Frogger' },
+      'bowling':        { icon: '🎳', name: 'Bowling' },
+      'simon-says':     { icon: '🎵', name: 'Simon Says' },
+      'quiz':           { icon: '💡', name: 'Quiz' },
+      'memory':         { icon: '🃏', name: 'Memory' },
+      'reaction-test':  { icon: '🧠', name: 'Reaction Test', lowerIsBetter: true, unit: 'ms' },
+      'slot-machine':   { icon: '🎰', name: 'Slot Machine' },
+      'cookie-clicker': { icon: '🍪', name: 'Cookie Clicker' },
+      'maze':           { icon: '🌀', name: 'Maze' },
+      'pong':           { icon: '🏓', name: 'Pong' },
+      'vier-gewinnt':   { icon: '🔴', name: '4 Gewinnt' },
+      'tic-tac-toe':    { icon: '❌', name: 'Tic-Tac-Toe' },
+      'wuerfel-duell':  { icon: '🎲', name: 'Würfel-Duell' },
+      'schere-stein-papier': { icon: '✂️', name: 'Schere-Stein-Papier' },
+      'minesweeper':    { icon: '💣', name: 'Minesweeper' },
+    };
+
+    const RANK_LABELS = ['🥇','🥈','🥉','4','5','6','7','8','9','10'];
+    const RANK_CLASSES = ['gold','silver','bronze','','','','','','',''];
+
+    function renderAll(filter = 'all') {
+      const gameIds = Leaderboard.getAllGames();
+      const grid = document.getElementById('lbGrid');
+      const noData = document.getElementById('noData');
+      grid.innerHTML = '';
+
+      const filtered = filter === 'all' ? gameIds : gameIds.filter(id => id === filter);
+
+      if (filtered.length === 0) {
+        noData.style.display = 'block';
+        return;
+      }
+      noData.style.display = 'none';
+
+      filtered.forEach(gameId => {
+        const meta = GAME_META[gameId] || { icon: '🎮', name: gameId };
+        const entries = Leaderboard.get(gameId);
+        if (!entries.length) return;
+
+        const card = document.createElement('div');
+        card.className = 'lb-card';
+
+        const unit = meta.unit || '';
+        const rows = entries.map((e, i) => `
+          <tr>
+            <td class="rank ${RANK_CLASSES[i]}">${RANK_LABELS[i]}</td>
+            <td class="player-name">${escHtml(e.name)}</td>
+            <td class="player-score">${e.score.toLocaleString('de')}${unit}</td>
+            <td class="player-date">${e.date}</td>
+          </tr>
+        `).join('');
+
+        card.innerHTML = `
+          <div class="lb-card-header">
+            <span class="lb-card-icon">${meta.icon}</span>
+            <span class="lb-card-title">${meta.name}</span>
+          </div>
+          <table class="lb-table"><tbody>${rows}</tbody></table>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderOverall() {
+      const gameIds = Leaderboard.getAllGames();
+      // Aggregate: sum of best scores per player per game
+      const playerMap = {};
+      gameIds.forEach(gameId => {
+        const entries = Leaderboard.get(gameId);
+        const seen = new Set();
+        entries.forEach(e => {
+          if (seen.has(e.name)) return;
+          seen.add(e.name);
+          if (!playerMap[e.name]) playerMap[e.name] = { total: 0, games: 0 };
+          playerMap[e.name].total += e.score;
+          playerMap[e.name].games++;
+        });
+      });
+
+      const sorted = Object.entries(playerMap)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 10);
+
+      const tbody = document.getElementById('overallBody');
+      if (!sorted.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#555;padding:20px">Noch keine Daten</td></tr>';
+        return;
+      }
+      tbody.innerHTML = sorted.map(([name, data], i) => `
+        <tr>
+          <td class="ov-rank">${RANK_LABELS[i]}</td>
+          <td class="ov-name">${escHtml(name)}</td>
+          <td class="ov-score">${data.total.toLocaleString('de')}</td>
+          <td class="ov-games">${data.games} Spiel${data.games !== 1 ? 'e' : ''}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderFilters() {
+      const gameIds = Leaderboard.getAllGames();
+      const row = document.getElementById('filterRow');
+      row.innerHTML = '';
+
+      if (gameIds.length === 0) return;
+
+      const allBtn = document.createElement('button');
+      allBtn.className = 'filter-btn active';
+      allBtn.textContent = '🎮 Alle';
+      allBtn.onclick = () => { setActive(allBtn); renderAll('all'); };
+      row.appendChild(allBtn);
+
+      gameIds.forEach(id => {
+        const meta = GAME_META[id] || { icon: '🎮', name: id };
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        btn.textContent = meta.icon + ' ' + meta.name;
+        btn.onclick = () => { setActive(btn); renderAll(id); };
+        row.appendChild(btn);
+      });
+    }
+
+    function setActive(el) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function clearAll() {
+      if (!confirm('Wirklich alle Scores löschen?')) return;
+      Leaderboard.getAllGames().forEach(id => localStorage.removeItem('leaderboard_' + id));
+      renderFilters(); renderAll(); renderOverall();
+    }
+
+    renderOverall();
+    renderFilters();
+    renderAll();
+  </script>
+</body>
+</html>

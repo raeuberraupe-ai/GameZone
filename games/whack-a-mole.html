@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Whack-a-Mole 🎪</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>
+    body{background:#0f0f1a;}
+    .wam-info{display:flex;gap:30px;font-size:1.2rem;margin-bottom:20px;color:#fff;flex-wrap:wrap;justify-content:center;}
+    .wam-info span{color:#e94560;font-weight:bold;}
+    .wam-grid{display:grid;grid-template-columns:repeat(3,120px);gap:16px;margin-bottom:20px;}
+    .hole{width:120px;height:120px;background:#1a1a2e;border-radius:50%;border:3px solid #2a2a4a;
+      display:flex;align-items:center;justify-content:center;font-size:3.5rem;cursor:pointer;
+      transition:transform 0.1s,border-color 0.2s;position:relative;overflow:hidden;}
+    .hole.active{border-color:#e94560;animation:pop 0.15s ease;}
+    .hole.active:hover{transform:scale(0.92);}
+    @keyframes pop{0%{transform:scale(0.8)}100%{transform:scale(1)}}
+    .hole .mole{transition:transform 0.15s;}
+    .hole:not(.active) .mole{transform:translateY(60px);}
+    #startBtn{padding:12px 36px;background:#e94560;color:#fff;border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;}
+    #startBtn:hover{background:#c73652;}
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🎪 Whack-a-Mole</h1>
+  <div class="wam-info">
+    <div>Score: <span id="score">0</span></div>
+    <div>Highscore: <span id="highscore">0</span></div>
+    <div>Zeit: <span id="timer">30</span>s</div>
+  </div>
+  <div class="wam-grid" id="grid"></div>
+  <div id="msg" class="game-over-msg" style="display:none;"></div>
+  <button id="startBtn" onclick="startGame()">Starten!</button>
+
+  <script>
+    const HOLES=9;
+    let score=0, hs=0, timeLeft=30, active=[], gameRunning=false, intervals=[], timerInt;
+
+    function buildGrid(){
+      const grid=document.getElementById('grid');
+      grid.innerHTML='';
+      for(let i=0;i<HOLES;i++){
+        const hole=document.createElement('div');
+        hole.className='hole'; hole.id='hole'+i;
+        hole.innerHTML='<span class="mole">🐹</span>';
+        hole.addEventListener('click',()=>whack(i));
+        grid.appendChild(hole);
+      }
+    }
+
+    function whack(i){
+      if(!gameRunning||!active.includes(i)) return;
+      score++; document.getElementById('score').textContent=score;
+      if(score>hs){hs=score;document.getElementById('highscore').textContent=hs;}
+      deactivate(i);
+    }
+
+    function activate(i){
+      const hole=document.getElementById('hole'+i);
+      if(!hole||active.includes(i)) return;
+      active.push(i); hole.classList.add('active');
+    }
+
+    function deactivate(i){
+      const hole=document.getElementById('hole'+i);
+      if(!hole) return;
+      active=active.filter(a=>a!==i); hole.classList.remove('active');
+    }
+
+    function startGame(){
+      score=0; timeLeft=30; active=[]; gameRunning=true;
+      document.getElementById('score').textContent=0;
+      document.getElementById('timer').textContent=30;
+      document.getElementById('msg').style.display='none';
+      document.getElementById('startBtn').style.display='none';
+      buildGrid();
+      intervals.forEach(clearInterval); intervals=[];
+
+      // Spawn moles
+      intervals.push(setInterval(()=>{
+        if(!gameRunning) return;
+        const i=Math.floor(Math.random()*HOLES);
+        activate(i);
+        setTimeout(()=>deactivate(i), Math.max(600, 1200-score*20));
+      }, Math.max(400, 800-score*10)));
+
+      timerInt=setInterval(()=>{
+        timeLeft--;
+        document.getElementById('timer').textContent=timeLeft;
+        if(timeLeft<=0){
+          gameRunning=false;
+          intervals.forEach(clearInterval);
+          clearInterval(timerInt);
+          for(let i=0;i<HOLES;i++) deactivate(i);
+          document.getElementById('msg').textContent=`Zeit! Du hast ${score} Maulwürfe erwischt!`;
+          document.getElementById('msg').style.display='block';
+          document.getElementById('startBtn').style.display='inline-block';
+          document.getElementById('startBtn').textContent='Nochmal!';
+        }
+      },1000);
+    }
+
+    buildGrid();
+  </script>
+</body>
+</html>

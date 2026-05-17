@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Car Racer 🏎️</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body { background: #0f0f1a; }
+    #gameCanvas { background: #1a1a1a; }
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🏎️ Car Racer</h1>
+  <div class="score-display">Score: <span id="score">0</span> &nbsp;|&nbsp; Highscore: <span id="highscore">0</span></div>
+  <canvas id="gameCanvas" width="400" height="550"></canvas>
+  <div id="gameOverMsg" class="game-over-msg" style="display:none;">Game Over! Klicken zum Neustart</div>
+  <p class="instructions">⬅️➡️ Pfeiltasten oder Maus zum Steuern</p>
+
+  <script src="../leaderboard.js"></script>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const highscoreEl = document.getElementById('highscore');
+    const msgEl = document.getElementById('gameOverMsg');
+
+    const W = canvas.width, H = canvas.height;
+    const ROAD_LEFT = 60, ROAD_RIGHT = W - 60;
+    const ROAD_W = ROAD_RIGHT - ROAD_LEFT;
+    const LANES = [ROAD_LEFT + ROAD_W*0.17, ROAD_LEFT + ROAD_W*0.5, ROAD_LEFT + ROAD_W*0.83];
+
+    const keys = {};
+    document.addEventListener('keydown', e => { keys[e.code] = true; if(['ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault(); });
+    document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      if (gameRunning) player.x = Math.max(ROAD_LEFT + 10, Math.min(ROAD_RIGHT - player.w - 10, mx - player.w/2));
+    });
+
+    let player, enemies, score, highscore, gameRunning, animId, frameCount, roadOffset, speed;
+    highscore = 0;
+
+    function initGame() {
+      player = { x: W/2 - 20, y: H - 100, w: 40, h: 70 };
+      enemies = []; score = 0; frameCount = 0; roadOffset = 0; speed = 4;
+      gameRunning = true;
+      msgEl.style.display = 'none';
+      if (animId) cancelAnimationFrame(animId);
+      loop();
+    }
+
+    function drawRoad() {
+      // Asphalt
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(ROAD_LEFT, 0, ROAD_W, H);
+
+      // Road edges
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(ROAD_LEFT, 0, 5, H);
+      ctx.fillRect(ROAD_RIGHT - 5, 0, 5, H);
+
+      // Dashed lane lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([40, 30]);
+      ctx.lineDashOffset = -roadOffset;
+      for (let i = 1; i < 3; i++) {
+        const lx = ROAD_LEFT + ROAD_W * (i/3);
+        ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx, H); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    function drawCar(x, y, w, h, color, isPlayer) {
+      // Body
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(x, y + h*0.15, w, h*0.7, 6);
+      ctx.fill();
+      // Roof
+      ctx.fillStyle = isPlayer ? '#c73652' : '#555';
+      ctx.beginPath();
+      ctx.roundRect(x + w*0.15, y, w*0.7, h*0.4, 4);
+      ctx.fill();
+      // Windows
+      ctx.fillStyle = 'rgba(150,220,255,0.7)';
+      ctx.fillRect(x + w*0.2, y + h*0.05, w*0.6, h*0.25);
+      // Wheels
+      ctx.fillStyle = '#111';
+      ctx.fillRect(x - 4, y + h*0.15, 8, 18);
+      ctx.fillRect(x + w - 4, y + h*0.15, 8, 18);
+      ctx.fillRect(x - 4, y + h*0.65, 8, 18);
+      ctx.fillRect(x + w - 4, y + h*0.65, 8, 18);
+      // Headlights
+      ctx.fillStyle = isPlayer ? '#fff' : '#ff4444';
+      ctx.fillRect(x + 4, isPlayer ? y + h*0.85 : y, w/2 - 6, 6);
+      ctx.fillRect(x + w/2 + 2, isPlayer ? y + h*0.85 : y, w/2 - 6, 6);
+    }
+
+    const ENEMY_COLORS = ['#ff4444','#ff8c00','#a855f7','#00d4ff','#ffd700'];
+
+    function spawnEnemy() {
+      const lane = LANES[Math.floor(Math.random() * LANES.length)];
+      enemies.push({ x: lane - 20, y: -80, w: 40, h: 70, color: ENEMY_COLORS[Math.floor(Math.random()*ENEMY_COLORS.length)] });
+    }
+
+    function loop() {
+      frameCount++;
+      score = Math.floor(frameCount / 6);
+      scoreEl.textContent = score;
+      if (score > highscore) { highscore = score; highscoreEl.textContent = highscore; }
+
+      speed = 4 + Math.floor(score / 40) * 0.5;
+      roadOffset = (roadOffset + speed) % 70;
+
+      // Background
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, W, H);
+      drawRoad();
+
+      // Player move
+      if (keys['ArrowLeft']) player.x = Math.max(ROAD_LEFT + 10, player.x - 5);
+      if (keys['ArrowRight']) player.x = Math.min(ROAD_RIGHT - player.w - 10, player.x + 5);
+
+      // Spawn enemies
+      const spawnRate = Math.max(50, 90 - Math.floor(score/30)*5);
+      if (frameCount % spawnRate === 0) spawnEnemy();
+
+      // Move enemies
+      enemies.forEach(e => e.y += speed + 1);
+      enemies = enemies.filter(e => e.y < H + 100);
+
+      // Collision
+      for (const e of enemies) {
+        if (player.x + 6 < e.x + e.w - 6 && player.x + player.w - 6 > e.x + 6 &&
+            player.y + 6 < e.y + e.h - 6 && player.y + player.h - 6 > e.y + 6) {
+          gameRunning = false;
+          msgEl.style.display = 'block';
+          if (typeof Leaderboard !== 'undefined') Leaderboard.save('car-racer', score);
+          enemies.forEach(en => drawCar(en.x, en.y, en.w, en.h, en.color, false));
+          drawCar(player.x, player.y, player.w, player.h, '#e94560', true);
+          return;
+        }
+      }
+
+      enemies.forEach(e => drawCar(e.x, e.y, e.w, e.h, e.color, false));
+      drawCar(player.x, player.y, player.w, player.h, '#e94560', true);
+
+      animId = requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener('click', () => { if (!gameRunning) initGame(); });
+
+    initGame();
+  </script>
+</body>
+</html>

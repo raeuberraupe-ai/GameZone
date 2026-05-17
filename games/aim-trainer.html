@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aim Trainer 🎯</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body { background: #0f0f1a; }
+    #gameCanvas { background: #0a0a18; cursor: crosshair; }
+    .aim-stats {
+      display: flex; gap: 30px; font-size: 1.2rem;
+      margin-bottom: 10px; color: #fff; flex-wrap: wrap; justify-content: center;
+    }
+    .aim-stats span { color: #e94560; font-weight: bold; }
+    #startOverlay {
+      position: absolute;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+    }
+    #startBtn {
+      padding: 14px 40px; background: #e94560;
+      color: #fff; border: none; border-radius: 25px;
+      font-size: 1.2rem; font-weight: bold; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    #startBtn:hover { background: #c73652; transform: scale(1.05); }
+    .wrapper { position: relative; display: inline-block; }
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🎯 Aim Trainer</h1>
+  <div class="aim-stats">
+    <div>Treffer: <span id="hits">0</span></div>
+    <div>Verfehlt: <span id="misses">0</span></div>
+    <div>Genauigkeit: <span id="accuracy">0</span>%</div>
+    <div>Zeit: <span id="timer">30</span>s</div>
+    <div>Highscore: <span id="highscore">0</span></div>
+  </div>
+  <div class="wrapper">
+    <canvas id="gameCanvas" width="600" height="420"></canvas>
+    <div id="startOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);border-radius:8px;">
+      <div style="font-size:1.3rem;color:#fff;margin-bottom:8px;">30 Sekunden — triff so viele Ziele wie möglich!</div>
+      <button id="startBtn">Starten</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const hitsEl = document.getElementById('hits');
+    const missesEl = document.getElementById('misses');
+    const accuracyEl = document.getElementById('accuracy');
+    const timerEl = document.getElementById('timer');
+    const highscoreEl = document.getElementById('highscore');
+    const overlay = document.getElementById('startOverlay');
+    const startBtn = document.getElementById('startBtn');
+
+    const W = canvas.width, H = canvas.height;
+    let targets, hits, misses, timeLeft, gameRunning, animId, countdownInterval, highscore = 0;
+
+    function randomTarget() {
+      const r = 15 + Math.random() * 25;
+      return {
+        x: r + Math.random() * (W - r*2),
+        y: r + Math.random() * (H - r*2),
+        r,
+        life: 1.0,
+        decay: 0.004 + Math.random() * 0.006
+      };
+    }
+
+    function initGame() {
+      targets = [randomTarget(), randomTarget()];
+      hits = 0; misses = 0; timeLeft = 30; gameRunning = true;
+      hitsEl.textContent = 0; missesEl.textContent = 0;
+      accuracyEl.textContent = 0; timerEl.textContent = 30;
+      overlay.style.display = 'none';
+
+      clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+
+      if (animId) cancelAnimationFrame(animId);
+      loop();
+    }
+
+    function endGame() {
+      gameRunning = false;
+      clearInterval(countdownInterval);
+      if (hits > highscore) { highscore = hits; highscoreEl.textContent = highscore; }
+
+      const acc = hits + misses > 0 ? Math.round(hits / (hits + misses) * 100) : 0;
+      overlay.innerHTML = `
+        <div style="font-size:1.5rem;color:#e94560;font-weight:bold;">Zeit abgelaufen!</div>
+        <div style="color:#fff;font-size:1.1rem;">Treffer: <b>${hits}</b> &nbsp;|&nbsp; Genauigkeit: <b>${acc}%</b></div>
+        <button id="startBtn" onclick="initGame()" style="padding:12px 36px;background:#e94560;color:#fff;border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;margin-top:8px;">Nochmal</button>
+      `;
+      overlay.style.display = 'flex';
+    }
+
+    canvas.addEventListener('click', e => {
+      if (!gameRunning) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      let hit = false;
+      targets = targets.filter(t => {
+        const dist = Math.hypot(mx - t.x, my - t.y);
+        if (dist <= t.r) { hit = true; return false; }
+        return true;
+      });
+
+      if (hit) {
+        hits++;
+        hitsEl.textContent = hits;
+        targets.push(randomTarget());
+      } else {
+        misses++;
+        missesEl.textContent = misses;
+      }
+
+      const total = hits + misses;
+      accuracyEl.textContent = total > 0 ? Math.round(hits / total * 100) : 0;
+    });
+
+    function loop() {
+      ctx.fillStyle = '#0a0a18';
+      ctx.fillRect(0, 0, W, H);
+
+      // Grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+      for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+      // Targets
+      targets.forEach(t => {
+        t.life -= t.decay;
+        if (t.life <= 0) {
+          misses++;
+          missesEl.textContent = misses;
+          const total = hits + misses;
+          accuracyEl.textContent = total > 0 ? Math.round(hits / total * 100) : 0;
+          Object.assign(t, randomTarget());
+        }
+
+        const alpha = t.life;
+        // Outer ring
+        ctx.strokeStyle = `rgba(233,69,96,${alpha})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI*2); ctx.stroke();
+        // Middle ring
+        ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.6})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.6, 0, Math.PI*2); ctx.stroke();
+        // Center dot
+        ctx.fillStyle = `rgba(233,69,96,${alpha})`;
+        ctx.shadowColor = '#e94560'; ctx.shadowBlur = 12;
+        ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.25, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Shrink ring (timer indicator)
+        ctx.strokeStyle = `rgba(255,200,0,${alpha * 0.5})`;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.r + 5, -Math.PI/2, -Math.PI/2 + Math.PI*2*t.life);
+        ctx.stroke();
+      });
+
+      if (gameRunning) animId = requestAnimationFrame(loop);
+    }
+
+    startBtn.addEventListener('click', initGame);
+  </script>
+</body>
+</html>

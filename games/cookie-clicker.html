@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cookie Clicker 🍪</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>
+    body{background:#0f0f1a;}
+    .cc-wrap{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;width:100%;max-width:800px;}
+    .cc-left{text-align:center;}
+    #cookie{font-size:8rem;cursor:pointer;user-select:none;transition:transform 0.08s;display:block;line-height:1;}
+    #cookie:active{transform:scale(0.88);}
+    .cookie-count{font-size:1.5rem;color:#ffd700;font-weight:bold;margin:10px 0;}
+    .cps{font-size:1rem;color:#aaa;margin-bottom:10px;}
+    .shop{background:#1a1a2e;border-radius:14px;padding:16px;min-width:260px;flex:1;}
+    .shop h3{color:#e94560;margin-bottom:12px;font-size:1.2rem;}
+    .upgrade{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;
+      background:#0f0f1a;border-radius:10px;margin-bottom:8px;border:1px solid #2a2a4a;}
+    .upgrade-info{flex:1;}
+    .upgrade-name{color:#fff;font-size:0.95rem;font-weight:bold;}
+    .upgrade-desc{color:#666;font-size:0.8rem;}
+    .upgrade-owned{color:#aaa;font-size:0.8rem;}
+    .buy-btn{padding:8px 14px;background:#e94560;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:bold;white-space:nowrap;}
+    .buy-btn:disabled{background:#333;cursor:not-allowed;}
+    .buy-btn:hover:not(:disabled){background:#c73652;}
+    .float{position:fixed;pointer-events:none;font-size:1.2rem;color:#ffd700;font-weight:bold;animation:floatUp 1s ease forwards;}
+    @keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🍪 Cookie Clicker</h1>
+  <div class="cc-wrap">
+    <div class="cc-left">
+      <div class="cookie-count">🍪 <span id="count">0</span> Cookies</div>
+      <div class="cps">+<span id="cps">0</span> pro Sekunde | +<span id="cpc">1</span> pro Klick</div>
+      <span id="cookie" onclick="clickCookie(event)">🍪</span>
+    </div>
+    <div class="shop">
+      <h3>🛒 Shop</h3>
+      <div id="shopItems"></div>
+    </div>
+  </div>
+
+  <script>
+    let cookies=0, cpc=1, cpsTotal=0;
+    const upgrades=[
+      {name:'🖱️ Bessere Maus',desc:'Doppelter Klick-Wert',cost:10,owned:0,effect:'cpc',val:1},
+      {name:'👶 Oma',desc:'+1 Cookie/s',cost:15,owned:0,effect:'cps',val:1},
+      {name:'🌾 Farm',desc:'+5 Cookies/s',cost:100,owned:0,effect:'cps',val:5},
+      {name:'⛏️ Mine',desc:'+10 Cookies/s',cost:500,owned:0,effect:'cps',val:10},
+      {name:'🏭 Fabrik',desc:'+50 Cookies/s',cost:2000,owned:0,effect:'cps',val:50},
+      {name:'🔬 Labor',desc:'+200 Cookies/s',cost:10000,owned:0,effect:'cps',val:200},
+      {name:'🚀 Raumschiff',desc:'+1000 Cookies/s',cost:50000,owned:0,effect:'cps',val:1000},
+      {name:'⚡ Turbo-Klick',desc:'+5 pro Klick',cost:250,owned:0,effect:'cpc',val:5},
+      {name:'💎 Diamant-Maus',desc:'+20 pro Klick',cost:5000,owned:0,effect:'cpc',val:20},
+    ];
+
+    function clickCookie(e){
+      cookies+=cpc;
+      updateDisplay();
+      // Float text
+      const el=document.createElement('div');
+      el.className='float'; el.textContent='+'+cpc;
+      el.style.left=e.clientX+'px'; el.style.top=e.clientY+'px';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),1000);
+    }
+
+    function buy(i){
+      const u=upgrades[i];
+      if(cookies<u.cost) return;
+      cookies-=u.cost;
+      u.owned++;
+      u.cost=Math.floor(u.cost*1.5);
+      if(u.effect==='cpc') cpc+=u.val;
+      else cpsTotal+=u.val;
+      updateDisplay();
+      renderShop();
+    }
+
+    function updateDisplay(){
+      document.getElementById('count').textContent=Math.floor(cookies).toLocaleString('de');
+      document.getElementById('cps').textContent=cpsTotal;
+      document.getElementById('cpc').textContent=cpc;
+      renderShop();
+    }
+
+    function renderShop(){
+      const shop=document.getElementById('shopItems');
+      shop.innerHTML=upgrades.map((u,i)=>`
+        <div class="upgrade">
+          <div class="upgrade-info">
+            <div class="upgrade-name">${u.name}</div>
+            <div class="upgrade-desc">${u.desc}</div>
+            <div class="upgrade-owned">Besitzt: ${u.owned} | Kosten: ${u.cost.toLocaleString('de')} 🍪</div>
+          </div>
+          <button class="buy-btn" onclick="buy(${i})" ${cookies<u.cost?'disabled':''}>Kaufen</button>
+        </div>
+      `).join('');
+    }
+
+    setInterval(()=>{ cookies+=cpsTotal/20; updateDisplay(); },50);
+    renderShop();
+  </script>
+</body>
+</html>

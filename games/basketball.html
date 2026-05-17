@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Basketball 🏀</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>body{background:#0f0f1a;} #gameCanvas{background:#1a1a2e;cursor:crosshair;}</style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🏀 Basketball</h1>
+  <div class="score-display">Score: <span id="score">0</span> &nbsp;|&nbsp; Zeit: <span id="timer">60</span>s &nbsp;|&nbsp; Highscore: <span id="hs">0</span></div>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="msg" class="game-over-msg" style="display:none;"></div>
+  <p class="instructions">Klicken und ziehen zum Werfen</p>
+
+  <script>
+    const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height;
+    const GRAVITY=0.4;
+    let ball, hoop, score, hs=0, timeLeft, timerInt, animId, dragging, dragStart, dragEnd, scored, frame;
+
+    function initGame(){
+      hoop={x:250,y:120,w:80,r:8};
+      ball={x:250,y:420,r:22,vx:0,vy:0,moving:false};
+      score=0; timeLeft=60; scored=false; frame=0;
+      document.getElementById('score').textContent=0;
+      document.getElementById('timer').textContent=60;
+      document.getElementById('msg').style.display='none';
+      clearInterval(timerInt);
+      timerInt=setInterval(()=>{
+        timeLeft--; document.getElementById('timer').textContent=timeLeft;
+        if(timeLeft<=0){ clearInterval(timerInt); endGame(); }
+      },1000);
+      if(animId) cancelAnimationFrame(animId);
+      loop();
+    }
+
+    canvas.addEventListener('mousedown',e=>{ if(ball.moving) return; const r=canvas.getBoundingClientRect(); dragStart={x:e.clientX-r.left,y:e.clientY-r.top}; dragging=true; });
+    canvas.addEventListener('mousemove',e=>{ if(!dragging) return; const r=canvas.getBoundingClientRect(); dragEnd={x:e.clientX-r.left,y:e.clientY-r.top}; });
+    canvas.addEventListener('mouseup',()=>{
+      if(!dragging||!dragEnd) return; dragging=false;
+      const dx=dragStart.x-dragEnd.x, dy=dragStart.y-dragEnd.y;
+      ball.vx=dx*0.18; ball.vy=dy*0.18; ball.moving=true; scored=false;
+    });
+
+    function endGame(){
+      ball.moving=false;
+      if(score>hs){hs=score;document.getElementById('hs').textContent=hs;}
+      document.getElementById('msg').textContent=`Zeit! Score: ${score} | Klicken zum Neustart`;
+      document.getElementById('msg').style.display='block';
+      canvas.addEventListener('click',()=>{ if(!ball.moving) initGame(); },{once:true});
+    }
+
+    function loop(){
+      frame++;
+      ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,W,H);
+      // Background court
+      ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(W/2,H,200,Math.PI,0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,H-2); ctx.lineTo(W,H-2); ctx.stroke();
+
+      // Hoop backboard
+      ctx.fillStyle='rgba(255,255,255,0.8)';
+      ctx.fillRect(hoop.x+hoop.w/2-5,hoop.y-60,10,50);
+      ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=3;
+      ctx.strokeRect(hoop.x+hoop.w/2-30,hoop.y-60,60,40);
+
+      // Hoop
+      ctx.strokeStyle='#ff6b00'; ctx.lineWidth=5;
+      ctx.beginPath(); ctx.moveTo(hoop.x,hoop.y); ctx.lineTo(hoop.x+hoop.w,hoop.y); ctx.stroke();
+      // Net
+      ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1;
+      for(let i=0;i<=4;i++){
+        const nx=hoop.x+i*(hoop.w/4);
+        ctx.beginPath(); ctx.moveTo(nx,hoop.y); ctx.lineTo(hoop.x+hoop.w/2-10+i*5,hoop.y+40); ctx.stroke();
+      }
+
+      // Drag arrow
+      if(dragging&&dragEnd){
+        ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+        ctx.beginPath(); ctx.moveTo(ball.x,ball.y); ctx.lineTo(ball.x+(dragStart.x-dragEnd.x)*0.5,ball.y+(dragStart.y-dragEnd.y)*0.5); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      if(ball.moving){
+        ball.vy+=GRAVITY; ball.x+=ball.vx; ball.y+=ball.vy;
+        ball.vx*=0.99;
+        // Bounce off walls
+        if(ball.x-ball.r<0){ball.x=ball.r;ball.vx*=-0.6;}
+        if(ball.x+ball.r>W){ball.x=W-ball.r;ball.vx*=-0.6;}
+        // Score check
+        if(!scored&&ball.y>hoop.y-5&&ball.y<hoop.y+20&&ball.x>hoop.x+ball.r&&ball.x<hoop.x+hoop.w-ball.r&&ball.vy>0){
+          scored=true; score++; document.getElementById('score').textContent=score;
+          ball.vy*=0.3; ball.vx*=0.3;
+        }
+        // Reset
+        if(ball.y>H+50||ball.y<-100){ ball={x:250,y:420,r:22,vx:0,vy:0,moving:false}; }
+      }
+
+      // Ball
+      ctx.fillStyle='#e87722';
+      ctx.shadowColor='#e87722'; ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.stroke();
+      // Ball lines
+      ctx.beginPath(); ctx.moveTo(ball.x-ball.r,ball.y); ctx.lineTo(ball.x+ball.r,ball.y); ctx.stroke();
+      ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0.3,Math.PI-0.3); ctx.stroke();
+      ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,Math.PI+0.3,Math.PI*2-0.3); ctx.stroke();
+
+      if(timeLeft>0) animId=requestAnimationFrame(loop);
+    }
+
+    initGame();
+  </script>
+</body>
+</html>
