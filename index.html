@@ -8,6 +8,27 @@
 </head>
 <body>
 
+  <!-- Geräte-Auswahl Screen -->
+  <div id="deviceScreen">
+    <div class="device-box">
+      <div class="device-logo">🎮</div>
+      <h1>Willkommen bei GameZone!</h1>
+      <p>Wie spielst du?</p>
+      <div class="device-btns">
+        <button class="device-btn" onclick="selectDevice('pc')">
+          <span class="device-icon">🖥️</span>
+          <span class="device-label">PC / Laptop</span>
+          <span class="device-sub">Maus & Tastatur</span>
+        </button>
+        <button class="device-btn" onclick="selectDevice('mobile')">
+          <span class="device-icon">📱</span>
+          <span class="device-label">Handy / Tablet</span>
+          <span class="device-sub">Touch-Steuerung</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Name Eingabe Screen -->
   <div id="nameScreen">
     <div class="name-box">
@@ -258,6 +279,24 @@
   </div>
 
   <script>
+    // Gerät auswählen
+    function selectDevice(type) {
+      localStorage.setItem('deviceType', type);
+      document.getElementById('deviceScreen').style.display = 'none';
+      // Name-Screen zeigen
+      const saved = localStorage.getItem('playerName');
+      if (saved) {
+        showMainPage(saved);
+      } else {
+        document.getElementById('nameScreen').style.display = 'flex';
+        document.getElementById('nameInput').focus();
+      }
+      // Mobile-Klasse setzen
+      if (type === 'mobile') {
+        document.body.classList.add('mobile-mode');
+      }
+    }
+
     function submitName() {
       const input = document.getElementById('nameInput');
       const name = input.value.trim();
@@ -290,12 +329,20 @@
       document.getElementById('nameInput').addEventListener('keydown', e => {
         if (e.key === 'Enter') submitName();
       });
-      const saved = localStorage.getItem('playerName');
-      if (saved) {
-        showMainPage(saved);
+
+      // Gerät-Screen immer zuerst zeigen (außer wenn schon gewählt)
+      const savedDevice = localStorage.getItem('deviceType');
+      if (savedDevice) {
+        if (savedDevice === 'mobile') document.body.classList.add('mobile-mode');
+        const saved = localStorage.getItem('playerName');
+        if (saved) {
+          showMainPage(saved);
+        } else {
+          document.getElementById('nameScreen').style.display = 'flex';
+          document.getElementById('nameInput').focus();
+        }
       } else {
-        document.getElementById('nameScreen').style.display = 'flex';
-        document.getElementById('nameInput').focus();
+        document.getElementById('deviceScreen').style.display = 'flex';
       }
     });
   </script>
