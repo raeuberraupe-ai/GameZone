@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic-Tac-Toe ❌</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>
+    body{background:#0f0f1a;}
+    .ttt-board{display:grid;grid-template-columns:repeat(3,110px);gap:8px;margin:20px 0;}
+    .ttt-cell{width:110px;height:110px;background:#1a1a2e;border-radius:12px;border:2px solid #2a2a4a;
+      font-size:3.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+      transition:background 0.15s,border-color 0.15s;}
+    .ttt-cell:hover:not(.taken){background:#2a2a4a;border-color:#e94560;}
+    .ttt-cell.taken{cursor:default;}
+    .ttt-cell.win{background:#1a3a1a;border-color:#00ff88;}
+    .score-row{display:flex;gap:30px;font-size:1.2rem;margin-bottom:10px;color:#fff;}
+    .score-row span{color:#e94560;font-weight:bold;}
+    #status{font-size:1.3rem;color:#aaa;margin-bottom:10px;min-height:32px;}
+    #restartBtn{padding:10px 28px;background:#e94560;color:#fff;border:none;border-radius:20px;font-size:1rem;font-weight:bold;cursor:pointer;margin-top:8px;}
+    #restartBtn:hover{background:#c73652;}
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>❌ Tic-Tac-Toe</h1>
+  <div class="score-row">
+    <div>Du (❌): <span id="pScore">0</span></div>
+    <div>KI (⭕): <span id="cScore">0</span></div>
+    <div>Unentschieden: <span id="draws">0</span></div>
+  </div>
+  <div id="status">Du bist dran!</div>
+  <div class="ttt-board" id="board"></div>
+  <button id="restartBtn" onclick="initGame()">Neustart</button>
+
+  <script>
+    let board, gameOver, pScore=0, cScore=0, draws=0;
+    const WIN=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+    function initGame(){
+      board=Array(9).fill(''); gameOver=false;
+      document.getElementById('status').textContent='Du bist dran!';
+      document.getElementById('status').style.color='#aaa';
+      render();
+    }
+
+    function checkWin(b,p){ return WIN.find(w=>w.every(i=>b[i]===p))||null; }
+
+    function minimax(b,isMax){
+      const w=checkWin(b,'⭕'); if(w) return 10;
+      const l=checkWin(b,'❌'); if(l) return -10;
+      if(b.every(v=>v)) return 0;
+      const moves=b.map((v,i)=>v?null:i).filter(v=>v!==null);
+      if(isMax){ let best=-99; moves.forEach(i=>{b[i]='⭕';best=Math.max(best,minimax(b,false));b[i]='';});return best; }
+      else{ let best=99; moves.forEach(i=>{b[i]='❌';best=Math.min(best,minimax(b,true));b[i]='';});return best; }
+    }
+
+    function aiMove(){
+      const moves=board.map((v,i)=>v?null:i).filter(v=>v!==null);
+      let best=-99, bestMove=moves[0];
+      moves.forEach(i=>{ board[i]='⭕'; const s=minimax(board,false); board[i]=''; if(s>best){best=s;bestMove=i;} });
+      board[bestMove]='⭕';
+    }
+
+    function click(i){
+      if(gameOver||board[i]) return;
+      board[i]='❌';
+      let w=checkWin(board,'❌');
+      if(w){ gameOver=true; pScore++; document.getElementById('pScore').textContent=pScore; document.getElementById('status').textContent='🏆 Du gewinnst!'; document.getElementById('status').style.color='#00ff88'; render(w); return; }
+      if(board.every(v=>v)){ gameOver=true; draws++; document.getElementById('draws').textContent=draws; document.getElementById('status').textContent='🤝 Unentschieden!'; document.getElementById('status').style.color='#ffd700'; render(); return; }
+      aiMove();
+      w=checkWin(board,'⭕');
+      if(w){ gameOver=true; cScore++; document.getElementById('cScore').textContent=cScore; document.getElementById('status').textContent='💻 KI gewinnt!'; document.getElementById('status').style.color='#e94560'; render(w); return; }
+      if(board.every(v=>v)){ gameOver=true; draws++; document.getElementById('draws').textContent=draws; document.getElementById('status').textContent='🤝 Unentschieden!'; document.getElementById('status').style.color='#ffd700'; }
+      render();
+    }
+
+    function render(winLine=null){
+      const b=document.getElementById('board'); b.innerHTML='';
+      board.forEach((v,i)=>{
+        const cell=document.createElement('div'); cell.className='ttt-cell';
+        if(v) cell.classList.add('taken');
+        if(winLine&&winLine.includes(i)) cell.classList.add('win');
+        cell.textContent=v;
+        cell.addEventListener('click',()=>click(i));
+        b.appendChild(cell);
+      });
+    }
+    initGame();
+  </script>
+</body>
+</html>

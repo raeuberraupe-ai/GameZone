@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bowling 🎳</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>body{background:#0f0f1a;} #gameCanvas{background:#c8a96e;cursor:pointer;}</style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🎳 Bowling</h1>
+  <div class="score-display">Runde: <span id="round">1</span>/10 &nbsp;|&nbsp; Score: <span id="score">0</span></div>
+  <canvas id="gameCanvas" width="500" height="520"></canvas>
+  <div id="msg" class="game-over-msg" style="display:none;"></div>
+  <p class="instructions">Maus bewegen zum Zielen | Klicken zum Werfen</p>
+  <script>
+    const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height;
+    let ball, pins, state, aimX=250, round=1, score=0, throwCount=0, animId;
+
+    function initGame(){
+      round=1; score=0; throwCount=0;
+      document.getElementById('score').textContent=0;
+      document.getElementById('round').textContent=1;
+      document.getElementById('msg').style.display='none';
+      setupRound();
+    }
+
+    function setupRound(){
+      throwCount=0;
+      const pos=[[250,100],[230,80],[270,80],[210,60],[250,60],[290,60],[190,40],[230,40],[270,40],[310,40]];
+      pins=pos.map(([x,y])=>({x,y,r:11,alive:true,vx:0,vy:0,moving:false}));
+      ball={x:250,y:460,r:20,vx:0,vy:0,moving:false};
+      state='aim';
+      if(animId) cancelAnimationFrame(animId);
+      loop();
+    }
+
+    canvas.addEventListener('mousemove',e=>{if(state==='aim'){const r=canvas.getBoundingClientRect();aimX=e.clientX-r.left;}});
+    canvas.addEventListener('click',()=>{
+      if(state!=='aim') return;
+      ball.vx=(aimX-ball.x)*0.035; ball.vy=-7; ball.moving=true; state='rolling';
+    });
+
+    function loop(){
+      // Lane
+      ctx.fillStyle='#c8a96e'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#b8996e'; ctx.fillRect(80,0,10,H); ctx.fillRect(410,0,10,H);
+      ctx.fillStyle='#555'; ctx.fillRect(0,0,80,H); ctx.fillRect(420,0,80,H);
+      // Arrows
+      ctx.fillStyle='rgba(180,0,0,0.25)';
+      [150,200,250,300,350].forEach(x=>{ctx.beginPath();ctx.moveTo(x,360);ctx.lineTo(x-7,378);ctx.lineTo(x+7,378);ctx.closePath();ctx.fill();});
+
+      if(state==='aim'){
+        ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.setLineDash([8,6]);
+        ctx.beginPath(); ctx.moveTo(ball.x,ball.y); ctx.lineTo(aimX,60); ctx.stroke(); ctx.setLineDash([]);
+      }
+
+      if(ball.moving){
+        ball.x+=ball.vx; ball.y+=ball.vy;
+        pins.forEach(p=>{
+          if(!p.alive) return;
+          const d=Math.hypot(ball.x-p.x,ball.y-p.y);
+          if(d<ball.r+p.r){ p.alive=false; p.vx=(p.x-ball.x)*0.25+ball.vx*0.4; p.vy=(p.y-ball.y)*0.25+ball.vy*0.2; p.moving=true; }
+        });
+        pins.forEach((p,i)=>{if(!p.moving)return;pins.forEach((q,j)=>{if(i===j||!q.alive)return;const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<p.r+q.r+2){q.alive=false;q.vx=p.vx*0.5;q.vy=p.vy*0.5;q.moving=true;}});});
+        pins.forEach(p=>{if(!p.moving)return;p.x+=p.vx;p.y+=p.vy;p.vx*=0.9;p.vy*=0.9;if(Math.abs(p.vx)<0.1&&Math.abs(p.vy)<0.1)p.moving=false;});
+        if(ball.y<-30||ball.x<80||ball.x>420){ball.moving=false;state='result';setTimeout(showResult,700);}
+      }
+
+      pins.forEach(p=>{
+        ctx.fillStyle=p.alive?'#fff':'#888';
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+        if(p.alive){ctx.fillStyle='#e94560';ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill();}
+      });
+
+      ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#444'; ctx.beginPath(); ctx.arc(ball.x-5,ball.y-5,5,0,Math.PI*2); ctx.fill();
+
+      animId=requestAnimationFrame(loop);
+    }
+
+    function showResult(){
+      const knocked=pins.filter(p=>!p.alive).length;
+      const msg=document.getElementById('msg');
+      let pts=knocked, text=`${knocked} Pins! +${knocked}`;
+      if(throwCount===0&&knocked===10){pts=30;text='🎳 STRIKE! +30';}
+      else if(throwCount===1&&knocked===10){pts=20;text='✨ SPARE! +20';}
+      score+=pts; document.getElementById('score').textContent=score;
+      msg.textContent=text; msg.style.display='block';
+      throwCount++;
+      if(throwCount>=2||(throwCount===1&&knocked===10)){
+        round++;
+        if(round>10){setTimeout(()=>{msg.textContent=`Spiel vorbei! Endpunktzahl: ${score}`;},800);return;}
+        document.getElementById('round').textContent=round;
+        setTimeout(()=>{msg.style.display='none';setupRound();},1400);
+      } else {
+        setTimeout(()=>{msg.style.display='none';ball={x:250,y:460,r:20,vx:0,vy:0,moving:false};state='aim';},1200);
+      }
+    }
+    initGame();
+  </script>
+</body>
+</html>

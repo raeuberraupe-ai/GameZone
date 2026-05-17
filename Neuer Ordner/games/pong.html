@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pong 🏓</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body { background: #0f0f1a; }
+    #gameCanvas { background: #000; }
+    .scoreboard {
+      display: flex;
+      gap: 60px;
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    .scoreboard span { color: #e94560; font-weight: bold; }
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🏓 Pong</h1>
+  <div class="scoreboard">
+    <div>Du: <span id="playerScore">0</span></div>
+    <div>Computer: <span id="cpuScore">0</span></div>
+  </div>
+  <canvas id="gameCanvas" width="700" height="450"></canvas>
+  <p class="instructions">🖱️ Maus bewegen zum Steuern | Erster auf 7 Punkte gewinnt!</p>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const playerScoreEl = document.getElementById('playerScore');
+    const cpuScoreEl = document.getElementById('cpuScore');
+
+    const W = canvas.width, H = canvas.height;
+    const PADDLE_W = 12, PADDLE_H = 90;
+    const WIN_SCORE = 7;
+
+    let playerScore = 0, cpuScore = 0, gameOver = false;
+    let ball = { x: W / 2, y: H / 2, r: 10, vx: 5, vy: 3 };
+    let player = { x: 20, y: H / 2 - PADDLE_H / 2, w: PADDLE_W, h: PADDLE_H };
+    let cpu = { x: W - 20 - PADDLE_W, y: H / 2 - PADDLE_H / 2, w: PADDLE_W, h: PADDLE_H };
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const my = e.clientY - rect.top;
+      player.y = Math.max(0, Math.min(H - PADDLE_H, my - PADDLE_H / 2));
+    });
+
+    canvas.addEventListener('click', () => {
+      if (gameOver) {
+        playerScore = 0; cpuScore = 0;
+        playerScoreEl.textContent = 0;
+        cpuScoreEl.textContent = 0;
+        gameOver = false;
+        resetBall(1);
+      }
+    });
+
+    function resetBall(dir) {
+      ball.x = W / 2;
+      ball.y = H / 2;
+      ball.vx = dir * 5;
+      ball.vy = (Math.random() * 4 - 2);
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      const cpuCenter = cpu.y + PADDLE_H / 2;
+      const cpuSpeed = 4;
+      if (cpuCenter < ball.y - 5) cpu.y += cpuSpeed;
+      else if (cpuCenter > ball.y + 5) cpu.y -= cpuSpeed;
+      cpu.y = Math.max(0, Math.min(H - PADDLE_H, cpu.y));
+
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      if (ball.y - ball.r < 0) { ball.y = ball.r; ball.vy *= -1; }
+      if (ball.y + ball.r > H) { ball.y = H - ball.r; ball.vy *= -1; }
+
+      if (
+        ball.x - ball.r < player.x + player.w &&
+        ball.x + ball.r > player.x &&
+        ball.y > player.y &&
+        ball.y < player.y + player.h
+      ) {
+        ball.vx = Math.abs(ball.vx) * 1.05;
+        const hitPos = (ball.y - (player.y + player.h / 2)) / (player.h / 2);
+        ball.vy = hitPos * 6;
+        ball.x = player.x + player.w + ball.r;
+      }
+
+      if (
+        ball.x + ball.r > cpu.x &&
+        ball.x - ball.r < cpu.x + cpu.w &&
+        ball.y > cpu.y &&
+        ball.y < cpu.y + cpu.h
+      ) {
+        ball.vx = -Math.abs(ball.vx) * 1.05;
+        const hitPos = (ball.y - (cpu.y + cpu.h / 2)) / (cpu.h / 2);
+        ball.vy = hitPos * 6;
+        ball.x = cpu.x - ball.r;
+      }
+
+      const maxSpeed = 16;
+      const spd = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+      if (spd > maxSpeed) {
+        ball.vx = (ball.vx / spd) * maxSpeed;
+        ball.vy = (ball.vy / spd) * maxSpeed;
+      }
+
+      if (ball.x + ball.r < 0) {
+        cpuScore++;
+        cpuScoreEl.textContent = cpuScore;
+        if (cpuScore >= WIN_SCORE) { gameOver = true; return; }
+        resetBall(1);
+      }
+      if (ball.x - ball.r > W) {
+        playerScore++;
+        playerScoreEl.textContent = playerScore;
+        if (playerScore >= WIN_SCORE) { gameOver = true; return; }
+        resetBall(-1);
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([15, 10]);
+      ctx.beginPath();
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W / 2, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#e94560';
+      ctx.beginPath();
+      ctx.roundRect(player.x, player.y, player.w, player.h, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#00d4ff';
+      ctx.beginPath();
+      ctx.roundRect(cpu.x, cpu.y, cpu.w, cpu.h, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = '#fff';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (gameOver) {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#e94560';
+        ctx.font = 'bold 48px Segoe UI';
+        ctx.textAlign = 'center';
+        const winner = playerScore >= WIN_SCORE ? '🏆 Du gewinnst!' : '💻 Computer gewinnt!';
+        ctx.fillText(winner, W / 2, H / 2 - 20);
+        ctx.fillStyle = '#aaa';
+        ctx.font = '22px Segoe UI';
+        ctx.fillText('Klicken zum Neustart', W / 2, H / 2 + 30);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>

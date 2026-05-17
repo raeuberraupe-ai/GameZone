@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Frogger 🐸</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>body{background:#0f0f1a;} #gameCanvas{background:#1a1a2e;}</style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🐸 Frogger</h1>
+  <div class="score-display">Score: <span id="score">0</span> &nbsp;|&nbsp; Leben: <span id="lives">3</span> &nbsp;|&nbsp; Highscore: <span id="hs">0</span></div>
+  <canvas id="gameCanvas" width="500" height="550"></canvas>
+  <div id="msg" class="game-over-msg" style="display:none;"></div>
+  <p class="instructions">⬅️➡️⬆️⬇️ Pfeiltasten zum Hüpfen</p>
+
+  <script>
+    const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height;
+    const CELL=50, ROWS=11;
+    const keys={};
+    document.addEventListener('keydown',e=>{if(!keys[e.code]){keys[e.code]=true;move(e.code);}if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();});
+    document.addEventListener('keyup',e=>keys[e.code]=false);
+
+    const LANES=[
+      {type:'safe',color:'#2a4a2a',speed:0,dir:1,cars:[]},       // row 10 - start
+      {type:'road',color:'#333',speed:2.5,dir:-1,cars:[]},
+      {type:'road',color:'#2a2a2a',speed:2,dir:1,cars:[]},
+      {type:'road',color:'#333',speed:3,dir:-1,cars:[]},
+      {type:'road',color:'#2a2a2a',speed:1.5,dir:1,cars:[]},
+      {type:'safe',color:'#1a3a1a',speed:0,dir:1,cars:[]},        // row 5 - median
+      {type:'water',color:'#1a3a6a',speed:1.5,dir:1,cars:[]},
+      {type:'water',color:'#1a2a5a',speed:2,dir:-1,cars:[]},
+      {type:'water',color:'#1a3a6a',speed:2.5,dir:1,cars:[]},
+      {type:'water',color:'#1a2a5a',speed:1,dir:-1,cars:[]},
+      {type:'goal',color:'#0a2a0a',speed:0,dir:1,cars:[]},        // row 0 - goal
+    ];
+
+    let frog, score, hs=0, lives, animId, frame, goals;
+
+    function initGame(){
+      frog={col:5,row:10,x:225,y:500};
+      score=0; lives=3; frame=0; goals=[];
+      document.getElementById('score').textContent=0;
+      document.getElementById('lives').textContent=3;
+      document.getElementById('msg').style.display='none';
+      // Init cars/logs
+      LANES.forEach((lane,i)=>{
+        lane.cars=[];
+        if(lane.type==='road'){
+          for(let j=0;j<3;j++) lane.cars.push({x:j*(W/3)+Math.random()*50,w:60+Math.random()*30,color:['#e94560','#ff8c00','#ffd700','#00d4ff'][Math.floor(Math.random()*4)]});
+        }
+        if(lane.type==='water'){
+          for(let j=0;j<3;j++) lane.cars.push({x:j*(W/3)+Math.random()*50,w:80+Math.random()*40,color:'#8B4513'});
+        }
+      });
+      if(animId) cancelAnimationFrame(animId);
+      loop();
+    }
+
+    function move(code){
+      const prev={col:frog.col,row:frog.row};
+      if(code==='ArrowUp'&&frog.row>0) frog.row--;
+      if(code==='ArrowDown'&&frog.row<10) frog.row++;
+      if(code==='ArrowLeft'&&frog.col>0) frog.col--;
+      if(code==='ArrowRight'&&frog.col<9) frog.col++;
+      frog.x=frog.col*CELL+CELL/2-15; frog.y=frog.row*CELL+CELL/2-15;
+      if(frog.row===0&&!goals.includes(frog.col)){
+        goals.push(frog.col); score+=100; document.getElementById('score').textContent=score;
+        if(score>hs){hs=score;document.getElementById('hs').textContent=hs;}
+        if(goals.length>=5){ score+=500; document.getElementById('score').textContent=score; goals=[]; }
+        frog.row=10; frog.col=5; frog.x=225; frog.y=500;
+      }
+    }
+
+    function loop(){
+      frame++;
+      ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,W,H);
+      LANES.forEach((lane,i)=>{
+        const y=i*CELL;
+        ctx.fillStyle=lane.color; ctx.fillRect(0,y,W,CELL);
+        // Lane markings for road
+        if(lane.type==='road'){ ctx.strokeStyle='rgba(255,255,0,0.2)'; ctx.lineWidth=1; ctx.setLineDash([20,15]); ctx.beginPath(); ctx.moveTo(0,y+CELL/2); ctx.lineTo(W,y+CELL/2); ctx.stroke(); ctx.setLineDash([]); }
+        // Move & draw cars/logs
+        lane.cars.forEach(car=>{
+          car.x+=lane.speed*lane.dir;
+          if(car.x>W+car.w) car.x=-car.w;
+          if(car.x<-car.w) car.x=W+car.w;
+          if(lane.type==='road'){
+            ctx.fillStyle=car.color; ctx.beginPath(); ctx.roundRect(car.x,y+8,car.w,CELL-16,6); ctx.fill();
+            ctx.fillStyle='rgba(255,255,200,0.8)'; ctx.fillRect(car.x+(lane.dir>0?car.w-12:4),y+12,8,8);
+          } else {
+            ctx.fillStyle='#8B4513'; ctx.beginPath(); ctx.roundRect(car.x,y+10,car.w,CELL-20,8); ctx.fill();
+            ctx.fillStyle='#6B3410'; ctx.fillRect(car.x+5,y+14,car.w-10,6);
+          }
+        });
+        // Goal slots
+        if(lane.type==='goal'){
+          for(let g=0;g<10;g++){
+            ctx.fillStyle=goals.includes(g)?'#00ff88':'#0a4a0a';
+            ctx.beginPath(); ctx.roundRect(g*CELL+4,y+4,CELL-8,CELL-8,6); ctx.fill();
+            if(goals.includes(g)){ ctx.font='24px serif'; ctx.textAlign='center'; ctx.fillText('🐸',g*CELL+CELL/2,y+CELL-8); }
+          }
+        }
+      });
+
+      // Water riding
+      const lane=LANES[frog.row];
+      if(lane.type==='water'){
+        let onLog=false;
+        lane.cars.forEach(log=>{
+          if(frog.x+15>log.x&&frog.x+15<log.x+log.w){ onLog=true; frog.x+=lane.speed*lane.dir; frog.col=Math.floor((frog.x+15)/CELL); }
+        });
+        if(!onLog){ die(); return; }
+      }
+
+      // Road collision
+      if(lane.type==='road'){
+        lane.cars.forEach(car=>{
+          if(frog.x+28>car.x&&frog.x<car.x+car.w&&frog.y+28>LANES.indexOf(lane)*CELL+8&&frog.y<LANES.indexOf(lane)*CELL+CELL-8) die();
+        });
+      }
+
+      // Out of bounds
+      if(frog.x<0||frog.x>W-30) die();
+
+      // Draw frog
+      ctx.font='28px serif'; ctx.textAlign='left';
+      ctx.fillText('🐸',frog.x,frog.y+28);
+
+      if(animId) animId=requestAnimationFrame(loop);
+    }
+
+    function die(){
+      lives--; document.getElementById('lives').textContent=lives;
+      if(lives<=0){ cancelAnimationFrame(animId); animId=null; document.getElementById('msg').textContent='Game Over! Drücke eine Taste zum Neustart'; document.getElementById('msg').style.display='block'; document.addEventListener('keydown',()=>initGame(),{once:true}); return; }
+      frog={col:5,row:10,x:225,y:500};
+    }
+
+    initGame();
+  </script>
+</body>
+</html>

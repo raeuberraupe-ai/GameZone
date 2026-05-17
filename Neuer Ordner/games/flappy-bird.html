@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flappy Bird 🐦</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>body{background:#0f0f1a;} #gameCanvas{background:#70c5ce;cursor:pointer;}</style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🐦 Flappy Bird</h1>
+  <div class="score-display">Score: <span id="score">0</span> &nbsp;|&nbsp; Highscore: <span id="highscore">0</span></div>
+  <canvas id="gameCanvas" width="400" height="550"></canvas>
+  <p class="instructions">Klicken oder LEERTASTE zum Fliegen</p>
+  <script src="../leaderboard.js"></script>
+  <script>
+    const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+    const scoreEl=document.getElementById('score'), hsEl=document.getElementById('highscore');
+    const W=canvas.width, H=canvas.height;
+    const PIPE_W=60, GAP=150, GRAVITY=0.5, JUMP=-9;
+    let bird,pipes,score,hs=0,started,dead,animId,frame;
+
+    function init(){
+      bird={x:80,y:H/2,vy:0,r:18};
+      pipes=[]; score=0; started=false; dead=false; frame=0;
+      scoreEl.textContent=0;
+      if(animId) cancelAnimationFrame(animId);
+      loop();
+    }
+
+    function flap(){ if(dead){init();return;} started=true; bird.vy=JUMP; }
+    document.addEventListener('keydown',e=>{ if(e.code==='Space'){e.preventDefault();flap();} });
+    canvas.addEventListener('click',flap);
+    function loop(){
+      frame++;
+      // Sky
+      ctx.fillStyle='#70c5ce'; ctx.fillRect(0,0,W,H);
+      // Clouds
+      ctx.fillStyle='rgba(255,255,255,0.8)';
+      [[60,80],[200,50],[320,100]].forEach(([x,y])=>{
+        const cx=(x-frame*0.3+W*2)%W;
+        ctx.beginPath(); ctx.arc(cx,y,25,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+20,y+5,18,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx-20,y+5,18,0,Math.PI*2); ctx.fill();
+      });
+      // Ground
+      ctx.fillStyle='#ded895'; ctx.fillRect(0,H-60,W,60);
+      ctx.fillStyle='#5d9e3a'; ctx.fillRect(0,H-60,W,12);
+
+      if(started && !dead){
+        bird.vy+=GRAVITY; bird.y+=bird.vy;
+        if(frame%90===0) pipes.push({x:W, top:80+Math.random()*(H-GAP-160)});
+        pipes.forEach(p=>p.x-=3);
+        pipes=pipes.filter(p=>p.x+PIPE_W>0);
+        // Score
+        pipes.forEach(p=>{ if(!p.passed && p.x+PIPE_W<bird.x){ p.passed=true; score++; scoreEl.textContent=score; if(score>hs){hs=score;hsEl.textContent=hs;} } });
+        // Collision
+        if(bird.y-bird.r<0||bird.y+bird.r>H-60) dead=true;
+        pipes.forEach(p=>{
+          if(bird.x+bird.r>p.x && bird.x-bird.r<p.x+PIPE_W && (bird.y-bird.r<p.top||bird.y+bird.r>p.top+GAP)) dead=true;
+        });
+      }
+
+      // Draw pipes
+      ctx.fillStyle='#5d9e3a';
+      pipes.forEach(p=>{
+        ctx.fillRect(p.x,0,PIPE_W,p.top);
+        ctx.fillRect(p.x,p.top+GAP,PIPE_W,H-p.top-GAP);
+        ctx.fillStyle='#4a8a2a';
+        ctx.fillRect(p.x-4,p.top-20,PIPE_W+8,20);
+        ctx.fillRect(p.x-4,p.top+GAP,PIPE_W+8,20);
+        ctx.fillStyle='#5d9e3a';
+      });
+
+      // Draw bird
+      ctx.save();
+      ctx.translate(bird.x,bird.y);
+      ctx.rotate(Math.min(Math.max(bird.vy*0.05,-0.5),0.8));
+      ctx.fillStyle='#f5c518';
+      ctx.beginPath(); ctx.arc(0,0,bird.r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(6,-4,8,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(9,-4,4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#ff8c00'; ctx.beginPath(); ctx.moveTo(14,2); ctx.lineTo(22,0); ctx.lineTo(14,6); ctx.fill();
+      ctx.restore();
+
+      if(!started){
+        ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#fff'; ctx.font='bold 28px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText('Klicken zum Starten',W/2,H/2); ctx.textAlign='left';
+      }
+      if(dead){
+        ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#e94560'; ctx.font='bold 36px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText('Game Over!',W/2,H/2-20);
+        ctx.fillStyle='#aaa'; ctx.font='20px Segoe UI';
+        ctx.fillText('Klicken zum Neustart',W/2,H/2+20); ctx.textAlign='left';
+        // Save score
+        if(typeof Leaderboard !== 'undefined') Leaderboard.save('flappy-bird', score);
+        return;
+      }
+      animId=requestAnimationFrame(loop);
+    }
+    init();
+  </script>
+</body>
+</html>

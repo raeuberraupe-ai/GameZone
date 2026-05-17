@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geometry Dash 🟥</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body { background: #0f0f1a; }
+    #gameCanvas { background: #1a1a2e; }
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🟥 Geometry Dash</h1>
+  <div class="score-display">Score: <span id="score">0</span> &nbsp;|&nbsp; Highscore: <span id="highscore">0</span></div>
+  <canvas id="gameCanvas" width="700" height="300"></canvas>
+  <div id="gameOverMsg" class="game-over-msg" style="display:none;">Game Over! Drücke LEERTASTE zum Neustart</div>
+  <p class="instructions">🖱️ Klicken oder LEERTASTE drücken zum Springen</p>
+
+  <script src="../leaderboard.js"></script>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const highscoreEl = document.getElementById('highscore');
+    const gameOverMsg = document.getElementById('gameOverMsg');
+
+    const GROUND = canvas.height - 60;
+    const GRAVITY = 0.6;
+    const JUMP_FORCE = -13;
+
+    let player, obstacles, score, highscore, gameRunning, animId, frameCount, speed;
+
+    function initGame() {
+      player = { x: 80, y: GROUND, w: 40, h: 40, vy: 0, onGround: true, rotation: 0 };
+      obstacles = [];
+      score = 0;
+      frameCount = 0;
+      speed = 5;
+      gameRunning = true;
+      gameOverMsg.style.display = 'none';
+      if (animId) cancelAnimationFrame(animId);
+      loop();
+    }
+
+    highscore = 0;
+
+    function jump() {
+      if (player.onGround && gameRunning) {
+        player.vy = JUMP_FORCE;
+        player.onGround = false;
+      }
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!gameRunning) initGame();
+        else jump();
+      }
+    });
+    canvas.addEventListener('click', () => {
+      if (!gameRunning) initGame();
+      else jump();
+    });
+
+    function spawnObstacle() {
+      const types = [
+        { w: 30, h: 40 },
+        { w: 30, h: 60 },
+        { w: 50, h: 35 },
+      ];
+      const t = types[Math.floor(Math.random() * types.length)];
+      obstacles.push({ x: canvas.width, y: GROUND + 40 - t.h, w: t.w, h: t.h });
+    }
+
+    function drawPlayer() {
+      ctx.save();
+      ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+      ctx.rotate(player.rotation);
+      ctx.fillStyle = '#e94560';
+      ctx.fillRect(-player.w / 2, -player.h / 2, player.w, player.h);
+      ctx.fillStyle = '#ff8c00';
+      ctx.fillRect(-player.w / 2 + 8, -player.h / 2 + 8, player.w - 16, player.h - 16);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(4, -10, 8, 8);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(7, -8, 4, 4);
+      ctx.restore();
+    }
+
+    function drawObstacle(obs) {
+      ctx.fillStyle = '#00d4ff';
+      ctx.beginPath();
+      ctx.moveTo(obs.x, obs.y + obs.h);
+      ctx.lineTo(obs.x + obs.w / 2, obs.y);
+      ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#0099bb';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function drawGround() {
+      ctx.fillStyle = '#2a2a4a';
+      ctx.fillRect(0, GROUND + 40, canvas.width, canvas.height - GROUND - 40);
+      ctx.fillStyle = '#e94560';
+      ctx.fillRect(0, GROUND + 40, canvas.width, 3);
+    }
+
+    function drawBackground() {
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      for (let i = 0; i < 30; i++) {
+        const sx = (i * 137 + frameCount * 0.5) % canvas.width;
+        const sy = (i * 73) % (GROUND + 30);
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+    }
+
+    function checkCollision(a, b) {
+      const pad = 5;
+      return a.x + pad < b.x + b.w &&
+             a.x + a.w - pad > b.x &&
+             a.y + pad < b.y + b.h &&
+             a.y + a.h - pad > b.y;
+    }
+
+    function loop() {
+      frameCount++;
+      score = Math.floor(frameCount / 6);
+      scoreEl.textContent = score;
+      if (score > highscore) {
+        highscore = score;
+        highscoreEl.textContent = highscore;
+      }
+
+      speed = 5 + Math.floor(score / 50) * 0.5;
+
+      const spawnInterval = Math.max(60, 110 - Math.floor(score / 30) * 5);
+      if (frameCount % spawnInterval === 0) spawnObstacle();
+
+      player.vy += GRAVITY;
+      player.y += player.vy;
+      if (!player.onGround) player.rotation += 0.1;
+
+      if (player.y >= GROUND) {
+        player.y = GROUND;
+        player.vy = 0;
+        player.onGround = true;
+        player.rotation = 0;
+      }
+
+      obstacles.forEach(obs => obs.x -= speed);
+      obstacles = obstacles.filter(obs => obs.x + obs.w > 0);
+
+      for (const obs of obstacles) {
+        if (checkCollision(player, obs)) {
+          gameRunning = false;
+          gameOverMsg.style.display = 'block';
+          if (typeof Leaderboard !== 'undefined') Leaderboard.save('geometry-dash', score);
+          drawBackground();
+          drawGround();
+          obstacles.forEach(drawObstacle);
+          drawPlayer();
+          return;
+        }
+      }
+
+      drawBackground();
+      drawGround();
+      obstacles.forEach(drawObstacle);
+      drawPlayer();
+
+      animId = requestAnimationFrame(loop);
+    }
+
+    initGame();
+  </script>
+</body>
+</html>

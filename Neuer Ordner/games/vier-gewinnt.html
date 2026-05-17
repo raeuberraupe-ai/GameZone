@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>4 Gewinnt 🔴</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>
+    body{background:#0f0f1a;}
+    #board{display:inline-grid;grid-template-columns:repeat(7,60px);gap:6px;background:#1a1a6e;padding:12px;border-radius:14px;margin:16px 0;}
+    .cell{width:60px;height:60px;border-radius:50%;background:#0a0a3a;cursor:pointer;transition:background 0.15s;}
+    .cell.p1{background:#e94560;}
+    .cell.p2{background:#ffd700;}
+    .cell.win{box-shadow:0 0 16px #fff,0 0 32px currentColor;}
+    .col-btn{width:60px;height:30px;background:transparent;border:none;cursor:pointer;font-size:1.2rem;color:#aaa;transition:color 0.15s;}
+    .col-btn:hover{color:#e94560;}
+    #cols{display:inline-grid;grid-template-columns:repeat(7,60px);gap:6px;margin-bottom:4px;}
+    #status{font-size:1.3rem;color:#aaa;margin:10px 0;min-height:32px;}
+    .score-row{display:flex;gap:30px;font-size:1.2rem;margin-bottom:10px;color:#fff;}
+    .score-row span{color:#e94560;font-weight:bold;}
+    #restartBtn{padding:10px 28px;background:#e94560;color:#fff;border:none;border-radius:20px;font-size:1rem;font-weight:bold;cursor:pointer;}
+    #restartBtn:hover{background:#c73652;}
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>🔴 4 Gewinnt</h1>
+  <div class="score-row">
+    <div>Du 🔴: <span id="pScore">0</span></div>
+    <div>KI 🟡: <span id="cScore">0</span></div>
+  </div>
+  <div id="status">Du bist dran!</div>
+  <div id="cols"></div>
+  <div id="board"></div>
+  <button id="restartBtn" onclick="initGame()">Neustart</button>
+
+  <script>
+    const ROWS=6, COLS=7;
+    let grid, gameOver, pScore=0, cScore=0;
+
+    function initGame(){
+      grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+      gameOver=false;
+      document.getElementById('status').textContent='Du bist dran!';
+      document.getElementById('status').style.color='#aaa';
+      render();
+    }
+
+    function drop(col){
+      if(gameOver) return;
+      for(let r=ROWS-1;r>=0;r--){
+        if(!grid[r][col]){ grid[r][col]=1; break; }
+      }
+      const w=checkWin(1);
+      if(w){ gameOver=true; pScore++; document.getElementById('pScore').textContent=pScore; document.getElementById('status').textContent='🏆 Du gewinnst!'; document.getElementById('status').style.color='#00ff88'; render(w); return; }
+      if(grid[0].every(v=>v)){ gameOver=true; document.getElementById('status').textContent='🤝 Unentschieden!'; render(); return; }
+      // AI
+      setTimeout(()=>{
+        const ac=aiMove();
+        for(let r=ROWS-1;r>=0;r--){ if(!grid[r][ac]){ grid[r][ac]=2; break; } }
+        const w2=checkWin(2);
+        if(w2){ gameOver=true; cScore++; document.getElementById('cScore').textContent=cScore; document.getElementById('status').textContent='🟡 KI gewinnt!'; document.getElementById('status').style.color='#ffd700'; render(w2); return; }
+        render();
+      },300);
+      render();
+    }
+
+    function aiMove(){
+      // Try to win
+      for(let c=0;c<COLS;c++){ const g=grid.map(r=>[...r]); for(let r=ROWS-1;r>=0;r--){ if(!g[r][c]){g[r][c]=2;if(checkWinGrid(g,2)) return c;break;} } }
+      // Block player
+      for(let c=0;c<COLS;c++){ const g=grid.map(r=>[...r]); for(let r=ROWS-1;r>=0;r--){ if(!g[r][c]){g[r][c]=1;if(checkWinGrid(g,1)) return c;break;} } }
+      // Center preference
+      const pref=[3,2,4,1,5,0,6];
+      for(const c of pref){ if(!grid[0][c]) return c; }
+      return 0;
+    }
+
+    function checkWin(p){ return checkWinGrid(grid,p); }
+    function checkWinGrid(g,p){
+      const cells=[];
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+        if(g[r][c]!==p) continue;
+        const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+        for(const [dr,dc] of dirs){
+          const line=[[r,c]];
+          for(let k=1;k<4;k++){ const nr=r+dr*k,nc=c+dc*k; if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&g[nr][nc]===p) line.push([nr,nc]); else break; }
+          if(line.length>=4) cells.push(...line);
+        }
+      }
+      return cells.length?cells:null;
+    }
+
+    function render(winCells=null){
+      const winSet=winCells?new Set(winCells.map(([r,c])=>r*COLS+c)):new Set();
+      const colsEl=document.getElementById('cols'); colsEl.innerHTML='';
+      for(let c=0;c<COLS;c++){
+        const btn=document.createElement('button'); btn.className='col-btn'; btn.textContent='▼';
+        btn.addEventListener('click',()=>drop(c)); colsEl.appendChild(btn);
+      }
+      const boardEl=document.getElementById('board'); boardEl.innerHTML='';
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+        const cell=document.createElement('div'); cell.className='cell';
+        if(grid[r][c]===1) cell.classList.add('p1');
+        if(grid[r][c]===2) cell.classList.add('p2');
+        if(winSet.has(r*COLS+c)) cell.classList.add('win');
+        boardEl.appendChild(cell);
+      }
+    }
+    initGame();
+  </script>
+</body>
+</html>

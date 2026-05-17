@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz 💡</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <style>
+    body{background:#0f0f1a;}
+    .quiz-box{max-width:560px;width:100%;background:#1a1a2e;border-radius:16px;padding:30px;border:1px solid #2a2a4a;}
+    .progress{height:6px;background:#2a2a4a;border-radius:3px;margin-bottom:20px;}
+    .progress-bar{height:100%;background:#e94560;border-radius:3px;transition:width 0.4s;}
+    .q-num{color:#aaa;font-size:0.9rem;margin-bottom:8px;}
+    .question{font-size:1.3rem;color:#fff;margin-bottom:24px;line-height:1.5;}
+    .answers{display:flex;flex-direction:column;gap:10px;}
+    .ans-btn{padding:14px 18px;background:#0f0f1a;border:2px solid #2a2a4a;border-radius:10px;
+      color:#fff;font-size:1rem;cursor:pointer;text-align:left;transition:border-color 0.15s,background 0.15s;}
+    .ans-btn:hover:not(:disabled){border-color:#e94560;background:#1a1a2e;}
+    .ans-btn.correct{border-color:#00ff88;background:#0a2a1a;color:#00ff88;}
+    .ans-btn.wrong{border-color:#e94560;background:#2a0a0a;color:#e94560;}
+    #feedback{min-height:28px;font-size:1rem;margin:14px 0;color:#aaa;}
+    #nextBtn{padding:12px 32px;background:#e94560;color:#fff;border:none;border-radius:20px;font-size:1rem;font-weight:bold;cursor:pointer;display:none;}
+    #nextBtn:hover{background:#c73652;}
+    .result-box{text-align:center;}
+    .result-box h2{font-size:2rem;color:#e94560;margin-bottom:10px;}
+    .result-box p{color:#aaa;font-size:1.1rem;margin-bottom:20px;}
+    #restartBtn{padding:12px 32px;background:#e94560;color:#fff;border:none;border-radius:20px;font-size:1rem;font-weight:bold;cursor:pointer;}
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>💡 Quiz</h1>
+  <div class="quiz-box" id="quizBox"></div>
+
+  <script>
+    const questions=[
+      {q:"Was ist die Hauptstadt von Deutschland?",a:["Berlin","München","Hamburg","Frankfurt"],c:0},
+      {q:"Wie viele Planeten hat unser Sonnensystem?",a:["7","8","9","10"],c:1},
+      {q:"Welches Element hat das chemische Symbol 'O'?",a:["Gold","Osmium","Sauerstoff","Ozon"],c:2},
+      {q:"In welchem Jahr begann der Zweite Weltkrieg?",a:["1935","1937","1939","1941"],c:2},
+      {q:"Wie viele Seiten hat ein Hexagon?",a:["5","6","7","8"],c:1},
+      {q:"Wer schrieb 'Romeo und Julia'?",a:["Goethe","Schiller","Shakespeare","Dickens"],c:2},
+      {q:"Was ist die größte Wüste der Welt?",a:["Sahara","Gobi","Antarktis","Arabische Wüste"],c:2},
+      {q:"Wie schnell ist Licht (ca.) in km/s?",a:["100.000","300.000","500.000","1.000.000"],c:1},
+      {q:"Welches Land hat die meisten Einwohner?",a:["USA","Indien","China","Russland"],c:1},
+      {q:"Was ist H₂O?",a:["Wasserstoff","Helium","Wasser","Salz"],c:2},
+    ];
+
+    let current=0, score=0;
+
+    function render(){
+      const box=document.getElementById('quizBox');
+      if(current>=questions.length){ showResult(box); return; }
+      const q=questions[current];
+      const pct=Math.round(current/questions.length*100);
+      box.innerHTML=`
+        <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
+        <div class="q-num">Frage ${current+1} von ${questions.length}</div>
+        <div class="question">${q.q}</div>
+        <div class="answers">${q.a.map((a,i)=>`<button class="ans-btn" onclick="answer(${i})">${a}</button>`).join('')}</div>
+        <div id="feedback"></div>
+        <button id="nextBtn" onclick="next()">Weiter →</button>
+      `;
+    }
+
+    function answer(i){
+      const q=questions[current];
+      document.querySelectorAll('.ans-btn').forEach(b=>b.disabled=true);
+      const btns=document.querySelectorAll('.ans-btn');
+      btns[q.c].classList.add('correct');
+      if(i!==q.c){ btns[i].classList.add('wrong'); document.getElementById('feedback').textContent='❌ Falsch! Die richtige Antwort war: '+q.a[q.c]; }
+      else{ score++; document.getElementById('feedback').textContent='✅ Richtig!'; document.getElementById('feedback').style.color='#00ff88'; }
+      document.getElementById('nextBtn').style.display='inline-block';
+    }
+
+    function next(){ current++; render(); }
+
+    function showResult(box){
+      const pct=Math.round(score/questions.length*100);
+      const emoji=pct>=80?'🏆':pct>=50?'👍':'😅';
+      box.innerHTML=`<div class="result-box">
+        <h2>${emoji} ${score}/${questions.length} richtig!</h2>
+        <p>${pct}% Genauigkeit</p>
+        <button id="restartBtn" onclick="restart()">Nochmal spielen</button>
+      </div>`;
+    }
+
+    function restart(){ current=0; score=0; render(); }
+    render();
+  </script>
+</body>
+</html>

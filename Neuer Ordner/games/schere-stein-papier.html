@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schere-Stein-Papier ✂️</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body { background: #0f0f1a; }
+    .choices { display: flex; gap: 20px; margin: 24px 0; flex-wrap: wrap; justify-content: center; }
+    .choice-btn { width: 110px; height: 110px; border-radius: 20px; border: 2px solid #2a2a4a;
+      background: #1a1a2e; font-size: 3.5rem; cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; }
+    .choice-btn:hover { transform: scale(1.12); border-color: #e94560; box-shadow: 0 0 20px rgba(233,69,96,0.4); }
+    .battle { display: flex; gap: 50px; align-items: center; margin: 20px 0; flex-wrap: wrap; justify-content: center; }
+    .battle-side { text-align: center; }
+    .battle-side p { color: #aaa; margin-bottom: 8px; }
+    .battle-icon { font-size: 5rem; min-height: 80px; }
+    .vs-text { font-size: 2rem; color: #555; }
+    #result { font-size: 1.6rem; font-weight: bold; margin: 16px 0; min-height: 44px; }
+    .score-board { display: flex; gap: 40px; font-size: 1.2rem; margin-bottom: 10px; }
+    .score-board span { color: #e94560; font-weight: bold; }
+  </style>
+</head>
+<body class="game-page">
+  <a href="../index.html" class="back-btn">← Zurück zur Startseite</a>
+  <h1>✂️ Schere-Stein-Papier</h1>
+  <div class="score-board">
+    <div>Du: <span id="pScore">0</span></div>
+    <div>Computer: <span id="cScore">0</span></div>
+    <div>Unentschieden: <span id="draws">0</span></div>
+  </div>
+  <p style="color:#aaa;">Wähle deine Waffe:</p>
+  <div class="choices">
+    <button class="choice-btn" onclick="play('✂️')">✂️</button>
+    <button class="choice-btn" onclick="play('🪨')">🪨</button>
+    <button class="choice-btn" onclick="play('📄')">📄</button>
+  </div>
+  <div class="battle">
+    <div class="battle-side"><p>Du</p><div class="battle-icon" id="pIcon">❓</div></div>
+    <div class="vs-text">VS</div>
+    <div class="battle-side"><p>Computer</p><div class="battle-icon" id="cIcon">❓</div></div>
+  </div>
+  <div id="result"></div>
+
+  <script>
+    const items = ['✂️','🪨','📄'];
+    const beats = { '✂️':'📄', '🪨':'✂️', '📄':'🪨' };
+    let pScore=0, cScore=0, draws=0;
+
+    function play(choice) {
+      const cpu = items[Math.floor(Math.random()*3)];
+      document.getElementById('pIcon').textContent = choice;
+      document.getElementById('cIcon').textContent = cpu;
+      const res = document.getElementById('result');
+      if (choice === cpu) {
+        draws++; res.textContent = '🤝 Unentschieden!'; res.style.color='#ffd700';
+      } else if (beats[choice] === cpu) {
+        pScore++; res.textContent = '🏆 Du gewinnst!'; res.style.color='#00ff88';
+      } else {
+        cScore++; res.textContent = '💻 Computer gewinnt!'; res.style.color='#e94560';
+      }
+      document.getElementById('pScore').textContent = pScore;
+      document.getElementById('cScore').textContent = cScore;
+      document.getElementById('draws').textContent = draws;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GameZone 🎮</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Name Eingabe Screen -->
+  <div id="nameScreen">
+    <div class="name-box">
+      <div class="name-logo">🎮</div>
+      <h1>Willkommen bei GameZone</h1>
+      <p>Wie heißt du?</p>
+      <input type="text" id="nameInput" placeholder="Dein Name..." maxlength="20" autocomplete="off" />
+      <div id="nameError" class="name-error"></div>
+      <button id="nameBtn" onclick="submitName()">Los geht's!</button>
+    </div>
+  </div>
+
+  <!-- Hauptseite -->
+  <div id="mainPage" style="display:none;">
+    <header>
+      <h1>🎮 GameZone</h1>
+      <p>Hey <span id="displayName" class="highlight-name"></span>, wähle ein Spiel!</p>
+      <div class="header-btns">
+        <a href="bestenliste.html" class="lb-header-btn">🏆 Bestenliste</a>
+        <button class="change-name-btn" onclick="changeName()">✏️ Name ändern</button>
+      </div>
+    </header>
+
+    <main class="game-grid">
+
+      <a href="games/geometry-dash.html" class="game-card">
+        <div class="game-icon">🟥</div>
+        <h2>Geometry Dash</h2>
+        <p>Springe über Hindernisse und überlebe so lange wie möglich!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/fussball.html" class="game-card">
+        <div class="game-icon">⚽</div>
+        <h2>Fußball</h2>
+        <p>Schieße Tore gegen den Computer!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/snake.html" class="game-card">
+        <div class="game-icon">🐍</div>
+        <h2>Snake</h2>
+        <p>Fresse Äpfel und werde immer länger!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/pong.html" class="game-card">
+        <div class="game-icon">🏓</div>
+        <h2>Pong</h2>
+        <p>Klassisches Tischtennis gegen den Computer!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/breakout.html" class="game-card">
+        <div class="game-icon">🧱</div>
+        <h2>Breakout</h2>
+        <p>Schieße alle Blöcke ab ohne den Ball zu verlieren!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/space-invaders.html" class="game-card">
+        <div class="game-icon">🚀</div>
+        <h2>Space Invaders</h2>
+        <p>Verteidige die Erde gegen die Alien-Invasion!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/memory.html" class="game-card">
+        <div class="game-icon">🃏</div>
+        <h2>Memory</h2>
+        <p>Finde alle Kartenpaare in möglichst wenigen Zügen!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/car-racer.html" class="game-card">
+        <div class="game-icon">🏎️</div>
+        <h2>Car Racer</h2>
+        <p>Weiche anderen Autos aus und fahre so weit wie möglich!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/aim-trainer.html" class="game-card">
+        <div class="game-icon">🎯</div>
+        <h2>Aim Trainer</h2>
+        <p>Klicke so schnell wie möglich auf die Ziele!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/wuerfel-duell.html" class="game-card">
+        <div class="game-icon">🎲</div>
+        <h2>Würfel-Duell</h2>
+        <p>Würfle gegen den Computer – wer hat mehr Augen?</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/2048.html" class="game-card">
+        <div class="game-icon">🔢</div>
+        <h2>2048</h2>
+        <p>Schiebe Kacheln zusammen und erreiche 2048!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/schere-stein-papier.html" class="game-card">
+        <div class="game-icon">✂️</div>
+        <h2>Schere-Stein-Papier</h2>
+        <p>Der Klassiker gegen die KI!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/flappy-bird.html" class="game-card">
+        <div class="game-icon">🐦</div>
+        <h2>Flappy Bird</h2>
+        <p>Fliege durch die Lücken ohne anzustoßen!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/tetris.html" class="game-card">
+        <div class="game-icon">🧩</div>
+        <h2>Tetris</h2>
+        <p>Stapele Blöcke und lösche volle Reihen!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/minesweeper.html" class="game-card">
+        <div class="game-icon">💣</div>
+        <h2>Minesweeper</h2>
+        <p>Finde alle Minen ohne eine zu erwischen!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/bowling.html" class="game-card">
+        <div class="game-icon">🎳</div>
+        <h2>Bowling</h2>
+        <p>Räume alle Pins ab!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/basketball.html" class="game-card">
+        <div class="game-icon">🏀</div>
+        <h2>Basketball</h2>
+        <p>Wirf den Ball in den Korb!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/whack-a-mole.html" class="game-card">
+        <div class="game-icon">🎪</div>
+        <h2>Whack-a-Mole</h2>
+        <p>Haue die Maulwürfe so schnell wie möglich!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/vier-gewinnt.html" class="game-card">
+        <div class="game-icon">🔴</div>
+        <h2>4 Gewinnt</h2>
+        <p>Vier in einer Reihe gegen den Computer!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/tic-tac-toe.html" class="game-card">
+        <div class="game-icon">❌</div>
+        <h2>Tic-Tac-Toe</h2>
+        <p>Drei in einer Reihe gegen die KI!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/maze.html" class="game-card">
+        <div class="game-icon">🌀</div>
+        <h2>Maze</h2>
+        <p>Finde den Ausgang aus dem Labyrinth!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/simon-says.html" class="game-card">
+        <div class="game-icon">🎵</div>
+        <h2>Simon Says</h2>
+        <p>Merke dir die Farbreihenfolge und wiederhole sie!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/archery.html" class="game-card">
+        <div class="game-icon">🏹</div>
+        <h2>Archery</h2>
+        <p>Triff die Zielscheibe so genau wie möglich!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/frogger.html" class="game-card">
+        <div class="game-icon">🐸</div>
+        <h2>Frogger</h2>
+        <p>Überquere die Straße ohne überfahren zu werden!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/quiz.html" class="game-card">
+        <div class="game-icon">💡</div>
+        <h2>Quiz</h2>
+        <p>Beantworte 10 Wissensfragen!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/slot-machine.html" class="game-card">
+        <div class="game-icon">🎰</div>
+        <h2>Slot Machine</h2>
+        <p>Drehe die Walzen und gewinne!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/cookie-clicker.html" class="game-card">
+        <div class="game-icon">🍪</div>
+        <h2>Cookie Clicker</h2>
+        <p>Klicke Cookies und kaufe Upgrades!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/reaction-test.html" class="game-card">
+        <div class="game-icon">🧠</div>
+        <h2>Reaction Test</h2>
+        <p>Teste deine Reaktionszeit!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/asteroids.html" class="game-card">
+        <div class="game-icon">🌟</div>
+        <h2>Asteroids</h2>
+        <p>Schieße Asteroiden ab und überlebe!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/waffentest.html" class="game-card">
+        <div class="game-icon">🔫</div>
+        <h2>Waffentest</h2>
+        <p>Bewege dich frei, wechsle Waffen und schieße auf Zielscheiben & Sandsack-Dummies!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+      <a href="games/sniper.html" class="game-card">
+        <div class="game-icon">🔭</div>
+        <h2>Sniper</h2>
+        <p>Ziele durch das Fernrohr, eliminiere Feinde und schütze Geiseln!</p>
+        <span class="play-btn">Spielen</span>
+      </a>
+
+    </main>
+
+    <footer>
+      <p>Made with ❤️ | GameZone 2026</p>
+    </footer>
+  </div>
+
+  <script>
+    function submitName() {
+      const input = document.getElementById('nameInput');
+      const name = input.value.trim();
+      const errorEl = document.getElementById('nameError');
+      if (name.length < 2) {
+        errorEl.textContent = '⚠️ Bitte mindestens 2 Zeichen eingeben!';
+        input.focus();
+        return;
+      }
+      errorEl.textContent = '';
+      localStorage.setItem('playerName', name);
+      showMainPage(name);
+    }
+
+    function showMainPage(name) {
+      document.getElementById('nameScreen').style.display = 'none';
+      document.getElementById('mainPage').style.display = 'block';
+      document.getElementById('displayName').textContent = name;
+    }
+
+    function changeName() {
+      localStorage.removeItem('playerName');
+      document.getElementById('mainPage').style.display = 'none';
+      document.getElementById('nameScreen').style.display = 'flex';
+      document.getElementById('nameInput').value = '';
+      document.getElementById('nameInput').focus();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('nameInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') submitName();
+      });
+      const saved = localStorage.getItem('playerName');
+      if (saved) {
+        showMainPage(saved);
+      } else {
+        document.getElementById('nameScreen').style.display = 'flex';
+        document.getElementById('nameInput').focus();
+      }
+    });
+  </script>
+</body>
+</html>
