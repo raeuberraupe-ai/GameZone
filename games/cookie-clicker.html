@@ -86,7 +86,16 @@
       document.getElementById('count').textContent=Math.floor(cookies).toLocaleString('de');
       document.getElementById('cps').textContent=cpsTotal;
       document.getElementById('cpc').textContent=cpc;
-      renderShop();
+      // Shop nur aktualisieren ohne neu zu erstellen
+      upgrades.forEach((u,i)=>{
+        const btn=document.querySelector(`#shopItems .upgrade:nth-child(${i+1}) .buy-btn`);
+        if(!btn) return;
+        const canAfford=cookies>=u.cost;
+        btn.disabled=!canAfford;
+        btn.className='buy-btn'+(canAfford?' affordable':'');
+        const owned=document.querySelector(`#shopItems .upgrade:nth-child(${i+1}) .upgrade-owned`);
+        if(owned) owned.textContent=`Besitzt: ${u.owned} | Kosten: ${u.cost.toLocaleString('de')} 🍪`;
+      });
     }
 
     function renderShop(){
