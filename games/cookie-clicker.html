@@ -21,9 +21,11 @@
     .upgrade-name{color:#fff;font-size:0.95rem;font-weight:bold;}
     .upgrade-desc{color:#666;font-size:0.8rem;}
     .upgrade-owned{color:#aaa;font-size:0.8rem;}
-    .buy-btn{padding:8px 14px;background:#e94560;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:bold;white-space:nowrap;}
-    .buy-btn:disabled{background:#333;cursor:not-allowed;}
-    .buy-btn:hover:not(:disabled){background:#c73652;}
+    .buy-btn{padding:8px 14px;background:#e94560;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:bold;white-space:nowrap;transition:all 0.2s;}
+    .buy-btn:disabled{background:#333;color:#666;cursor:not-allowed;}
+    .buy-btn:hover:not(:disabled){background:#c73652;transform:scale(1.05);}
+    .buy-btn.affordable{background:#00aa44;animation:pulse-green 1s ease-in-out infinite;}
+    @keyframes pulse-green{0%,100%{box-shadow:0 0 0 rgba(0,170,68,0)}50%{box-shadow:0 0 10px rgba(0,170,68,0.6)}}
     .float{position:fixed;pointer-events:none;font-size:1.2rem;color:#ffd700;font-weight:bold;animation:floatUp 1s ease forwards;}
     @keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
   </style>
@@ -89,16 +91,22 @@
 
     function renderShop(){
       const shop=document.getElementById('shopItems');
-      shop.innerHTML=upgrades.map((u,i)=>`
-        <div class="upgrade">
+      shop.innerHTML='';
+      upgrades.forEach((u,i)=>{
+        const div=document.createElement('div');
+        div.className='upgrade';
+        div.innerHTML=`
           <div class="upgrade-info">
             <div class="upgrade-name">${u.name}</div>
             <div class="upgrade-desc">${u.desc}</div>
             <div class="upgrade-owned">Besitzt: ${u.owned} | Kosten: ${u.cost.toLocaleString('de')} 🍪</div>
           </div>
-          <button class="buy-btn" onclick="buy(${i})" ${cookies<u.cost?'disabled':''}>Kaufen</button>
-        </div>
-      `).join('');
+          <button class="buy-btn ${cookies>=u.cost?'affordable':''}" ${cookies<u.cost?'disabled':''}>Kaufen</button>
+        `;
+        const btn=div.querySelector('.buy-btn');
+        btn.addEventListener('click',()=>buy(i));
+        shop.appendChild(div);
+      });
     }
 
     setInterval(()=>{ cookies+=cpsTotal/20; updateDisplay(); },50);
